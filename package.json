@@ -1,0 +1,23 @@
+{
+  "name": "ntr-adv",
+  "version": "1.0.0",
+  "description": "Juego web de aventura gráfica basado en texto con sistema de reinos y generales",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "build": "node scripts/inject-env.js"
+  },
+  "keywords": [
+    "game",
+    "strategy",
+    "adventure"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "chokidar": "^3.6.0",
+    "dotenv": "^16.3.1",
+    "http-server": "^14.1.1"
+  }
+}

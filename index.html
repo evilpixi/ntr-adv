@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NTR Adventure - Juego de Estrategia</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="game-container">
+        <!-- Panel Izquierdo: Historia -->
+        <div class="panel history-panel">
+            <div class="panel-header">
+                <h2>Historia</h2>
+            </div>
+            <div class="history-content" id="historyContent">
+                <p class="welcome-message">Bienvenido al juego. El reino te espera...</p>
+            </div>
+            <div class="history-controls">
+                <button id="generateInitialStoryBtn" class="btn btn-primary">Generar Historia Inicial</button>
+                <button id="nextTurnBtn" class="btn btn-primary">Siguiente Turno</button>
+                <button id="saveGameBtn" class="btn btn-secondary">Guardar Partida</button>
+                <button id="loadGameBtn" class="btn btn-secondary">Cargar Partida</button>
+            </div>
+        </div>
+
+        <!-- Panel Derecho: Información -->
+        <div class="panel info-panel">
+            <div class="panel-header">
+                <h2>Información</h2>
+            </div>
+            <div class="info-tabs">
+                <button class="tab-btn active" data-tab="kingdoms">Reinos</button>
+                <button class="tab-btn" data-tab="generals">Generales</button>
+                <button class="tab-btn" data-tab="provinces">Provincias</button>
+                <button class="tab-btn" data-tab="actions">Acciones</button>
+            </div>
+            
+            <!-- Tab: Reinos -->
+            <div class="tab-content active" id="tab-kingdoms">
+                <div class="kingdoms-list" id="kingdomsList"></div>
+            </div>
+
+            <!-- Tab: Generales -->
+            <div class="tab-content" id="tab-generals">
+                <div class="generals-section">
+                    <h3>Tus Generales</h3>
+                    <div class="generals-list" id="playerGeneralsList"></div>
+                </div>
+                <div class="generals-section">
+                    <h3>Generales Enemigas</h3>
+                    <div class="generals-list" id="enemyGeneralsList"></div>
+                </div>
+            </div>
+
+            <!-- Tab: Provincias -->
+            <div class="tab-content" id="tab-provinces">
+                <div class="provinces-map" id="provincesMap"></div>
+            </div>
+
+            <!-- Tab: Acciones -->
+            <div class="tab-content" id="tab-actions">
+                <div class="actions-panel" id="actionsPanel">
+                    <p>Selecciona una general para asignar una acción</p>
+                    <div class="assigned-actions" id="assignedActions"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para asignar acciones -->
+    <div class="modal" id="actionModal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h3 id="modalTitle">Asignar Acción</h3>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- Modal de carga -->
+    <div class="modal" id="loadingModal">
+        <div class="modal-content">
+            <div class="loading-spinner"></div>
+            <p id="loadingText">Cargando...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="js/env.js"></script>
+    <script type="module" src="js/dataLoader.js"></script>
+    <script type="module" src="js/config.js"></script>
+    <script type="module" src="js/gameState.js"></script>
+    <script type="module" src="js/combat.js"></script>
+    <script type="module" src="js/ai.js"></script>
+    <script type="module" src="js/aiIntegration.js"></script>
+    <script type="module" src="js/game.js"></script>
+</body>
+</html>
