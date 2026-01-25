@@ -26,9 +26,9 @@ const mimeTypes = {
   '.wasm': 'application/wasm'
 };
 
-// Inyectar variables de entorno al inicio
-function injectEnv() {
-  const envVars = {
+// Función para obtener variables de entorno
+function getEnvVars() {
+  return {
     OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
     OPENAI_MODEL: process.env.OPENAI_MODEL || 'gpt-4',
     OPENAI_BASE_URL: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
@@ -43,24 +43,7 @@ function injectEnv() {
     DEFAULT_AI_SERVICE: process.env.DEFAULT_AI_SERVICE || 'openai',
     GAME_LANGUAGE: process.env.GAME_LANGUAGE || 'es'
   };
-
-  const envJs = `// Variables de entorno inyectadas automáticamente
-export const ENV = ${JSON.stringify(envVars, null, 2)};
-`;
-
-  const envPath = path.join(PUBLIC_DIR, 'js', 'env.js');
-  const jsDir = path.dirname(envPath);
-  
-  if (!fs.existsSync(jsDir)) {
-    fs.mkdirSync(jsDir, { recursive: true });
-  }
-  
-  fs.writeFileSync(envPath, envJs);
-  console.log('Variables de entorno inyectadas en js/env.js');
 }
-
-// Inyectar variables al inicio
-injectEnv();
 
 // Clientes conectados para hot reload
 const clients = new Set();
@@ -85,7 +68,6 @@ watcher.on('change', (filePath) => {
   // Reinyectar env si cambió .env
   if (filePath.includes('.env')) {
     require('dotenv').config({ override: true });
-    injectEnv();
   }
   
   // Notificar a todos los clientes conectados
@@ -122,25 +104,19 @@ const server = http.createServer((req, res) => {
   
   // Endpoint para recargar variables de entorno
   if (req.url === '/api/reload-env' && req.method === 'POST') {
-    injectEnv();
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ success: true }));
-    return;
-  }
-  // Endpoint para recargar variables de entorno
-  if (req.url === '/api/reload-env' && req.method === 'POST') {
-    injectEnv();
+    require('dotenv').config({ override: true });
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ success: true }));
     return;
   }
 
+  // Determinar ruta del archivo
+  let filePath;
   // Manejar rutas de la aplicación (SPA routing)
   // Si es una ruta de la app (/generals/, /kingdoms/ o /province/), servir index.html
   if (req.url.startsWith('/generals/') || req.url.startsWith('/kingdoms/') || req.url.startsWith('/province/')) {
     filePath = path.join(PUBLIC_DIR, 'index.html');
   } else {
-    // Determinar ruta del archivo
     filePath = path.join(PUBLIC_DIR, req.url === '/' ? 'index.html' : req.url);
   }
   
@@ -168,6 +144,23 @@ const server = http.createServer((req, res) => {
         res.end(`Error del servidor: ${error.code}`, 'utf-8');
       }
     } else {
+      let finalContent = content;
+      
+      // Si es index.html, inyectar variables de entorno
+      if (filePath.endsWith('index.html')) {
+        const envVars = getEnvVars();
+        const htmlContent = content.toString();
+        
+        // Reemplazar el objeto window.__ENV__ con las variables reales del .env
+        // Usar el mismo indentado que tiene el HTML (12 espacios)
+        const envJson = JSON.stringify(envVars, null, 12);
+        const envReplacement = `window.__ENV__ = ${envJson};`;
+        finalContent = htmlContent.replace(
+          /window\.__ENV__ = \{[\s\S]*?\};/,
+          envReplacement
+        );
+      }
+      
       // Archivo encontrado - agregar headers de no-cache
       const headers = {
         'Content-Type': contentType,
@@ -183,7 +176,7 @@ const server = http.createServer((req, res) => {
       }
       
       res.writeHead(200, headers);
-      res.end(content, 'utf-8');
+      res.end(finalContent, 'utf-8');
     }
   });
 });

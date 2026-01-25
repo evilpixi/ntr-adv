@@ -3,8 +3,8 @@
 .env.local
 .env.*.local
 
-# Generated env.js with real API keys (keep template version)
-# js/env.js is versioned with placeholders, but if you generate it locally with real keys, it won't be committed
+# Generated env.js (no longer used, variables are injected in HTML)
+js/env.js
 
 # Dependencies
 node_modules/
