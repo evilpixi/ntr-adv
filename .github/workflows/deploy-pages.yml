@@ -54,18 +54,37 @@ jobs:
             GAME_LANGUAGE: process.env.GAME_LANGUAGE || 'es'
           };
           
+          // Log for debug (without showing sensitive values)
+          console.log('Environment variables detected:');
+          Object.keys(envVars).forEach(key => {
+            const hasValue = envVars[key] && envVars[key] !== '';
+            console.log(\`  \${key}: \${hasValue ? '[CONFIGURED]' : '[EMPTY]'}\`);
+          });
+          
           const indexPath = path.join(process.cwd(), 'index.html');
           let html = fs.readFileSync(indexPath, 'utf8');
           
-          // Reemplazar el placeholder de window.__ENV__ con las variables reales
+          // Replace the window.__ENV__ placeholder with real variables
+          // Use a pattern that captures the entire object including line breaks and multiple properties
           const envScript = \`window.__ENV__ = \${JSON.stringify(envVars, null, 2)};\`;
-          html = html.replace(
-            /window\.__ENV__ = window\.__ENV__ \|\| \{[\s\S]*?\};/,
-            envScript
-          );
+          // Pattern that captures from window.__ENV__ = to the closing };
+          const pattern = /window\.__ENV__\s*=\s*\{[\s\S]*?\};/;
+          
+          if (pattern.test(html)) {
+            html = html.replace(pattern, envScript);
+            console.log('Environment variables injected successfully into index.html');
+          } else {
+            console.error('ERROR: window.__ENV__ pattern not found in index.html');
+            console.error('Searching for pattern:', pattern.toString());
+            // Try to find the block manually for debug
+            const match = html.match(/window\.__ENV__[\s\S]{0,200}/);
+            if (match) {
+              console.error('Block found (first 200 chars):', match[0]);
+            }
+            process.exit(1);
+          }
           
           fs.writeFileSync(indexPath, html);
-          console.log('Variables de entorno inyectadas en index.html');
           "
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

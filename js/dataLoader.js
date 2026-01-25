@@ -3,6 +3,8 @@
  * All data is loaded once at start and can be modified at runtime
  */
 
+import { getGeneralsImagePath, getKingdomsImagePath, getProvincesImagePath } from './constants.js';
+
 class GameDataLoader {
     constructor() {
         this.kingdoms = [];
@@ -163,21 +165,27 @@ class GameDataLoader {
         return provinces.map(p => typeof p === 'string' ? p : p.name);
     }
 
-    getGeneralImage(generalId) {
+    getGeneralsImage(generalId) {
         const general = this.generals.find(g => g.id === generalId);
-        return general?.imageUrl || null;
+        const imageUrl = general?.imageUrl || null;
+        // Build full path using the constant if it's just a filename
+        return imageUrl ? getGeneralsImagePath(imageUrl) : null;
     }
 
-    getKingdomImage(kingdomId) {
+    getKingdomsImage(kingdomId) {
         const kingdom = this.kingdoms.find(k => k.id === kingdomId);
-        return kingdom?.imageUrl || null;
+        const imageUrl = kingdom?.imageUrl || null;
+        // Build full path using the constant if it's just a filename
+        return imageUrl ? getKingdomsImagePath(imageUrl) : null;
     }
 
-    getProvinceImage(kingdomId, provinceIndex) {
+    getProvincesImage(kingdomId, provinceIndex) {
         const provinces = this.provinces[kingdomId] || [];
         if (provinces[provinceIndex]) {
             const province = provinces[provinceIndex];
-            return typeof province === 'string' ? null : (province.imageUrl || null);
+            const imageUrl = typeof province === 'string' ? null : (province.imageUrl || null);
+            // Build full path using the constant if it's just a filename
+            return imageUrl ? getProvincesImagePath(imageUrl) : null;
         }
         return null;
     }
@@ -254,5 +262,5 @@ class GameDataLoader {
     }
 }
 
-// Exportar instancia singleton
+// Export singleton instance
 export const gameData = new GameDataLoader();
