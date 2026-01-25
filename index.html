@@ -112,7 +112,26 @@
     </div>
 
     <!-- Scripts -->
-    <script type="module" src="js/env.js"></script>
+    <script>
+        // Variables de entorno inyectadas automáticamente
+        // Se inyectan desde .env (desarrollo) o GitHub Secrets (producción)
+        // Este script se reemplaza automáticamente con valores reales
+        window.__ENV__ = {
+            OPENAI_API_KEY: '',
+            OPENAI_MODEL: 'gpt-4',
+            OPENAI_BASE_URL: 'https://api.openai.com/v1',
+            DEEPSEEK_API_KEY: '',
+            DEEPSEEK_MODEL: 'deepseek-chat',
+            DEEPSEEK_BASE_URL: 'https://api.deepseek.com/v1',
+            GROK_API_KEY: '',
+            GROK_MODEL: 'grok-beta',
+            GROK_BASE_URL: 'https://api.x.ai/v1',
+            OLLAMA_BASE_URL: 'http://localhost:11434',
+            OLLAMA_MODEL: 'llama2',
+            DEFAULT_AI_SERVICE: 'openai',
+            GAME_LANGUAGE: 'es'
+        };
+    </script>
     <script type="module" src="js/dataLoader.js"></script>
     <script type="module" src="js/config.js"></script>
     <script type="module" src="js/gameState.js"></script>

@@ -32,7 +32,7 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Generate env.js from GitHub Secrets
+      - name: Inject environment variables into HTML
         run: |
           node -e "
           const fs = require('fs');
@@ -54,15 +54,18 @@ jobs:
             GAME_LANGUAGE: process.env.GAME_LANGUAGE || 'es'
           };
           
-          const envJs = \`// Variables de entorno inyectadas automáticamente desde GitHub Secrets
-          // Este archivo se genera automáticamente durante el deploy, no editar manualmente
-          export const ENV = \${JSON.stringify(envVars, null, 2)};
-          \`;
+          const indexPath = path.join(process.cwd(), 'index.html');
+          let html = fs.readFileSync(indexPath, 'utf8');
           
-          const envPath = path.join(process.cwd(), 'js', 'env.js');
-          fs.mkdirSync(path.dirname(envPath), { recursive: true });
-          fs.writeFileSync(envPath, envJs);
-          console.log('env.js generado exitosamente');
+          // Reemplazar el placeholder de window.__ENV__ con las variables reales
+          const envScript = \`window.__ENV__ = \${JSON.stringify(envVars, null, 2)};\`;
+          html = html.replace(
+            /window\.__ENV__ = window\.__ENV__ \|\| \{[\s\S]*?\};/,
+            envScript
+          );
+          
+          fs.writeFileSync(indexPath, html);
+          console.log('Variables de entorno inyectadas en index.html');
           "
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

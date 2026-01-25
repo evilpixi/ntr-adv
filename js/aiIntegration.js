@@ -1,11 +1,26 @@
-import { ENV } from './env.js';
 import { getAIConfig, getPromptTemplate } from './config.js';
 
 /**
  * Loads environment variables configuration
+ * Las variables se inyectan desde .env (desarrollo) o GitHub Secrets (producción)
+ * y se exponen en window.__ENV__ en index.html
  */
 export function loadEnvConfig() {
-    return ENV;
+    return window.__ENV__ || {
+        OPENAI_API_KEY: '',
+        OPENAI_MODEL: 'gpt-4',
+        OPENAI_BASE_URL: 'https://api.openai.com/v1',
+        DEEPSEEK_API_KEY: '',
+        DEEPSEEK_MODEL: 'deepseek-chat',
+        DEEPSEEK_BASE_URL: 'https://api.deepseek.com/v1',
+        GROK_API_KEY: '',
+        GROK_MODEL: 'grok-beta',
+        GROK_BASE_URL: 'https://api.x.ai/v1',
+        OLLAMA_BASE_URL: 'http://localhost:11434',
+        OLLAMA_MODEL: 'llama2',
+        DEFAULT_AI_SERVICE: 'openai',
+        GAME_LANGUAGE: 'es'
+    };
 }
 
 /**
