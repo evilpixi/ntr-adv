@@ -1,10 +1,10 @@
-// Configuración del juego
-// Este archivo actúa como wrapper de compatibilidad
-// El acceso principal a los datos es a través de gameData en memoria
+// Game configuration
+// This file acts as a compatibility wrapper
+// Main data access is through gameData in memory
 
 import { gameData } from './dataLoader.js';
 
-// Re-exportar funciones que acceden a gameData en memoria
+// Re-export functions that access gameData in memory
 export function getKingdoms() {
     return gameData.getKingdoms();
 }
@@ -29,7 +29,7 @@ export function getPromptTemplate() {
     return gameData.getPromptTemplate();
 }
 
-// Funciones helper que acceden a datos en memoria
+// Helper functions that access data in memory
 export function getKingdomById(id) {
     return gameData.getKingdomById(id);
 }
@@ -47,16 +47,29 @@ export function getCapitalName(kingdomId) {
     return names[0] || 'Capital';
 }
 
+export function getGeneralsImage(generalId) {
+    return gameData.getGeneralsImage(generalId);
+}
+
+export function getKingdomsImage(kingdomId) {
+    return gameData.getKingdomsImage(kingdomId);
+}
+
+export function getProvincesImage(kingdomId, provinceIndex) {
+    return gameData.getProvincesImage(kingdomId, provinceIndex);
+}
+
+// Maintain compatibility with old names (deprecated)
 export function getGeneralImage(generalId) {
-    return gameData.getGeneralImage(generalId);
+    return gameData.getGeneralsImage(generalId);
 }
 
 export function getKingdomImage(kingdomId) {
-    return gameData.getKingdomImage(kingdomId);
+    return gameData.getKingdomsImage(kingdomId);
 }
 
 export function getProvinceImage(kingdomId, provinceIndex) {
-    return gameData.getProvinceImage(kingdomId, provinceIndex);
+    return gameData.getProvincesImage(kingdomId, provinceIndex);
 }
 
 export function getProvinceDescription(kingdomId, provinceIndex) {
@@ -71,18 +84,18 @@ export function getProvinceInfo(kingdomId, provinceIndex) {
     return gameData.getProvinceInfo(kingdomId, provinceIndex);
 }
 
-// Exportar constantes para compatibilidad usando getters
-// Estas propiedades acceden a gameData en memoria
-// Nota: Solo funcionan después de que gameData.load() haya sido llamado
+// Export constants for compatibility using getters
+// These properties access gameData in memory
+// Note: Only work after gameData.load() has been called
 
-// Crear objetos con getters para compatibilidad
+// Create objects with getters for compatibility
 const createGetter = (getterFn) => {
     return {
         get value() { return getterFn(); }
     };
 };
 
-// Para arrays, crear proxies que actúan como arrays
+// For arrays, create proxies that act as arrays
 function createArrayLike(getterFn) {
     const handler = {
         get(target, prop) {
@@ -158,6 +171,6 @@ export const PROMPT_TEMPLATE = new Proxy({}, {
     }
 });
 
-// Nota: Para acceso directo a los datos, usa gameData directamente
+// Note: For direct data access, use gameData directly
 // import { gameData } from './dataLoader.js';
 // const kingdoms = gameData.getKingdoms();
