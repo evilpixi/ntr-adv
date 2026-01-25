@@ -3,7 +3,7 @@ export const ENV = {
   "OPENAI_API_KEY": "your_openai_api_key_here",
   "OPENAI_MODEL": "gpt-4",
   "OPENAI_BASE_URL": "https://api.openai.com/v1",
-  "DEEPSEEK_API_KEY": "your_deepseek_api_key_here",
+  "DEEPSEEK_API_KEY": "sk-ffb80a6fdba644568f5ca6d948ce8203",
   "DEEPSEEK_MODEL": "deepseek-chat",
   "DEEPSEEK_BASE_URL": "https://api.deepseek.com/v1",
   "GROK_API_KEY": "your_grok_api_key_here",
