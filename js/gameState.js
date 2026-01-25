@@ -1,5 +1,5 @@
-// GameState ahora recibe datos como parámetros en lugar de importarlos
-// Esto permite que los datos sean modificables en runtime
+// GameState now receives data as parameters instead of importing them
+// This allows data to be modifiable at runtime
 import { getGameRules } from './config.js';
 
 export class General {
@@ -42,7 +42,7 @@ export class General {
         this.love = Math.max(0, this.love - amount);
         if (this.love === 0 && this.status === 'captured') {
             this.status = 'slave';
-            // Cambiar de reino al captor
+            // Change kingdom to captor
             const oldKingdom = this.kingdom;
             this.kingdom = this.captor;
             return { converted: true, oldKingdom, newKingdom: this.captor };
@@ -93,7 +93,7 @@ export class Province {
 
     changeOwner(newOwner) {
         this.kingdom = newOwner;
-        this.hp = this.maxHp; // Restaurar HP al cambiar de dueño
+        this.hp = this.maxHp; // Restore HP when changing owner
     }
 
     toJSON() {
@@ -162,31 +162,42 @@ export class GameState {
     }
 
     /**
-     * Inicializa el estado del juego con datos parametrizados
-     * @param {Object} gameData - Objeto con datos del juego (kingdoms, generals, provinces)
+     * Initializes game state with parameterized data
+     * @param {Object} gameData - Object with game data (kingdoms, generals, provinces)
      */
     initialize(gameData) {
-        // Obtener datos de gameData
+        // Get data from gameData
         const kingdoms = gameData.getKingdoms();
         const generals = gameData.getGenerals();
         const provinces = gameData.getProvinces();
 
-        // Crear reinos
+        // Create kingdoms
         kingdoms.forEach(kingdomData => {
             const kingdom = new Kingdom(kingdomData);
             
-            // Agregar generales
+            // Add generals
             generals.filter(g => g.kingdom === kingdomData.id).forEach(genData => {
                 const general = new General(genData);
+                // Assign by default to defend the capital
+                if (!general.location) {
+                    general.location = 'capital';
+                }
                 kingdom.addGeneral(general);
             });
 
-            // Agregar provincias
+            // Add provinces
             const provinceData = provinces[kingdomData.id] || [];
             provinceData.forEach((provinceInfo, index) => {
                 const provinceName = typeof provinceInfo === 'string' ? provinceInfo : provinceInfo.name;
+                // Create descriptive ID based on province name
+                const provinceSlug = provinceName
+                    .toLowerCase()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '') // Remove accents
+                    .replace(/[^a-z0-9]+/g, '-') // Replace special characters with hyphens
+                    .replace(/^-+|-+$/g, ''); // Remove hyphens at start and end
                 const province = new Province({
-                    id: `${kingdomData.id}_province_${index}`,
+                    id: `${kingdomData.id}-${provinceSlug}`,
                     name: provinceName,
                     kingdom: kingdomData.id,
                     isCapital: index === 0
@@ -247,26 +258,45 @@ export class GameState {
         return generals;
     }
 
+    getGeneralsAtProvince(provinceId) {
+        const province = this.getProvince(provinceId);
+        if (!province) return [];
+        
+        const allGenerals = this.getAllGenerals();
+        const generalsAtProvince = [];
+        
+        for (const general of allGenerals) {
+            // If province is capital and general is at 'capital', or if location matches
+            if (province.isCapital && general.location === 'capital' && general.kingdom === province.kingdom) {
+                generalsAtProvince.push(general);
+            } else if (general.location === provinceId) {
+                generalsAtProvince.push(general);
+            }
+        }
+        
+        return generalsAtProvince;
+    }
+
     validateAction(generalId, actionType, targetId) {
         const general = this.getGeneral(generalId);
-        if (!general) return { valid: false, error: 'General no encontrada' };
-        if (!general.isAvailable()) return { valid: false, error: 'General no disponible' };
+        if (!general) return { valid: false, error: 'General not found' };
+        if (!general.isAvailable()) return { valid: false, error: 'General not available' };
 
         if (actionType === 'attack' || actionType === 'defend') {
             const province = this.getProvince(targetId);
-            if (!province) return { valid: false, error: 'Provincia no encontrada' };
+            if (!province) return { valid: false, error: 'Province not found' };
             if (actionType === 'defend' && province.kingdom !== general.kingdom) {
-                return { valid: false, error: 'No puedes defender provincias enemigas' };
+                return { valid: false, error: 'You cannot defend enemy provinces' };
             }
             if (actionType === 'attack' && province.kingdom === general.kingdom) {
-                return { valid: false, error: 'No puedes atacar tus propias provincias' };
+                return { valid: false, error: 'You cannot attack your own provinces' };
             }
         }
 
         if (['rest', 'date', 'train'].includes(actionType)) {
             const kingdom = this.getKingdom(general.kingdom);
             const capital = kingdom.getCapital();
-            if (!capital) return { valid: false, error: 'Capital no encontrada' };
+            if (!capital) return { valid: false, error: 'Capital not found' };
         }
 
         return { valid: true };
@@ -299,6 +329,10 @@ export class GameState {
                 
                 kingdomData.generals.forEach(genData => {
                     const general = new General(genData);
+                    // If no location assigned, assign to capital by default
+                    if (!general.location) {
+                        general.location = 'capital';
+                    }
                     kingdom.addGeneral(general);
                 });
 
@@ -312,7 +346,7 @@ export class GameState {
 
             return true;
         } catch (e) {
-            console.error('Error cargando estado:', e);
+            console.error('Error loading state:', e);
             return false;
         }
     }

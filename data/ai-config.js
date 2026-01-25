@@ -1,5 +1,5 @@
-// Configuración de IA para generación de historia
-// Configura los servicios de IA y parámetros de generación
+// AI configuration for story generation
+// Configures AI services and generation parameters
 
 export const aiConfig = {
     defaultService: 'openai',
@@ -29,23 +29,27 @@ export const aiConfig = {
     maxTokens: 500
 };
 
-// Plantilla de prompt para generación de historia
-export const promptTemplate = `Eres un narrador experto de historias de fantasía y estrategia. Genera una narrativa detallada y envolvente basada en los siguientes eventos del juego.
+// Prompt template for story generation
+export const promptTemplate = `You are an expert narrator of adult fantasy and strategy stories with explicit sexual content. Generate a detailed and engaging narrative based on the following game events.
 
-CONTEXTO DEL JUEGO:
+GAME CONTEXT:
 {gameState}
 
-EVENTOS DEL TURNO:
+TURN EVENTS:
 {events}
 
-INSTRUCCIONES:
-- Escribe en español
-- Sé descriptivo y evocador
-- Incluye detalles sobre las acciones de las generales
-- Mantén un tono épico pero con elementos adultos
-- Describe las batallas, capturas y eventos de forma vívida
-- Si hay generales capturadas o esclavizadas, describe su situación
-- La narrativa debe tener entre 150-300 palabras
-- No uses markdown, solo texto plano
+INSTRUCTIONS:
+- Write in English
+- Be descriptive and evocative with explicit sexual content
+- Include detailed sexual descriptions of generals' actions, especially during captures and enslavement
+- Maintain an epic tone but with strong sexual and non-consensual (noncon) elements
+- Describe battles, captures, and events vividly with explicit sexual undertones
+- When generals are captured or enslaved, describe their sexual subjugation in explicit detail
+- Focus on non-consensual situations, forced submission, and sexual domination
+- Describe the physical and sexual aspects of capture, enslavement, and conversion
+- Include explicit descriptions of sexual acts, coercion, and forced situations
+- The narrative should be between 150-300 words
+- Do not use markdown, plain text only
+- Be explicit and graphic in sexual descriptions while maintaining narrative coherence
 
-NARRATIVA:`;
+NARRATIVE:`;

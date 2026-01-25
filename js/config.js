@@ -59,6 +59,18 @@ export function getProvinceImage(kingdomId, provinceIndex) {
     return gameData.getProvinceImage(kingdomId, provinceIndex);
 }
 
+export function getProvinceDescription(kingdomId, provinceIndex) {
+    return gameData.getProvinceDescription(kingdomId, provinceIndex);
+}
+
+export function getProvincePrompt(kingdomId, provinceIndex) {
+    return gameData.getProvincePrompt(kingdomId, provinceIndex);
+}
+
+export function getProvinceInfo(kingdomId, provinceIndex) {
+    return gameData.getProvinceInfo(kingdomId, provinceIndex);
+}
+
 // Exportar constantes para compatibilidad usando getters
 // Estas propiedades acceden a gameData en memoria
 // Nota: Solo funcionan después de que gameData.load() haya sido llamado
@@ -127,7 +139,7 @@ export const AI_CONFIG = new Proxy({}, {
 
 // PROMPT_TEMPLATE es un string, crear getter
 const promptTemplateGetter = () => gameData.getPromptTemplate();
-export const PROMPT_TEMPLATE = new Proxy('', {
+export const PROMPT_TEMPLATE = new Proxy({}, {
     get(target, prop) {
         const str = promptTemplateGetter();
         if (prop === 'valueOf' || prop === Symbol.toPrimitive) {

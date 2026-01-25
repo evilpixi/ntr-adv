@@ -2,24 +2,24 @@ import { ENV } from './env.js';
 import { getAIConfig, getPromptTemplate } from './config.js';
 
 /**
- * Carga la configuración de variables de entorno
+ * Loads environment variables configuration
  */
 export function loadEnvConfig() {
     return ENV;
 }
 
 /**
- * Genera una historia usando un servicio de IA
- * @param {GameState} gameState - Estado del juego
- * @param {Array} events - Eventos del turno
- * @param {string} service - Servicio a usar (opcional, usa el por defecto si no se especifica)
- * @returns {Promise<string>} - Historia generada
+ * Generates a story using an AI service
+ * @param {GameState} gameState - Game state
+ * @param {Array} events - Turn events
+ * @param {string} service - Service to use (optional, uses default if not specified)
+ * @returns {Promise<string>} - Generated story
  */
 export async function generateStory(gameState, events, service = null) {
     const env = loadEnvConfig();
     const serviceToUse = service || env.DEFAULT_AI_SERVICE || 'openai';
     
-    // Construir el prompt
+    // Build prompt
     const gameStateText = formatGameState(gameState);
     const eventsText = formatEvents(events);
     
@@ -28,61 +28,61 @@ export async function generateStory(gameState, events, service = null) {
         .replace('{gameState}', gameStateText)
         .replace('{events}', eventsText);
     
-    // Intentar generar con el servicio especificado
+    // Try to generate with specified service
     try {
         return await callAIService(serviceToUse, prompt, env);
     } catch (error) {
-        console.warn(`Error con servicio ${serviceToUse}:`, error);
+        console.warn(`Error with service ${serviceToUse}:`, error);
         
-        // Intentar con servicios alternativos
+        // Try with alternative services
         const fallbackServices = ['openai', 'deepseek', 'grok', 'ollama'].filter(s => s !== serviceToUse);
         
         for (const fallbackService of fallbackServices) {
             try {
-                console.log(`Intentando con servicio alternativo: ${fallbackService}`);
+                console.log(`Trying with alternative service: ${fallbackService}`);
                 return await callAIService(fallbackService, prompt, env);
             } catch (fallbackError) {
-                console.warn(`Error con servicio ${fallbackService}:`, fallbackError);
+                console.warn(`Error with service ${fallbackService}:`, fallbackError);
                 continue;
             }
         }
         
-        // Si todos fallan, retornar historia por defecto
+        // If all fail, return default story
         return generateDefaultStory(events);
     }
 }
 
 /**
- * Llama a un servicio de IA específico
+ * Calls a specific AI service
  */
 async function callAIService(service, prompt, env) {
     const aiConfig = getAIConfig();
     const config = aiConfig.services[service];
     if (!config) {
-        throw new Error(`Servicio ${service} no configurado`);
+        throw new Error(`Service ${service} not configured`);
     }
     
     switch (service) {
         case 'openai':
-            return await callOpenAI(prompt, env, config);
+            return await callOpenAI(prompt, env, config, aiConfig);
         case 'deepseek':
-            return await callDeepSeek(prompt, env, config);
+            return await callDeepSeek(prompt, env, config, aiConfig);
         case 'grok':
-            return await callGrok(prompt, env, config);
+            return await callGrok(prompt, env, config, aiConfig);
         case 'ollama':
-            return await callOllama(prompt, env, config);
+            return await callOllama(prompt, env, config, aiConfig);
         default:
-            throw new Error(`Servicio ${service} no soportado`);
+            throw new Error(`Service ${service} not supported`);
     }
 }
 
 /**
- * Llama a la API de OpenAI
+ * Calls OpenAI API
  */
-async function callOpenAI(prompt, env, config) {
+async function callOpenAI(prompt, env, config, aiConfig) {
     const apiKey = env.OPENAI_API_KEY;
     if (!apiKey) {
-        throw new Error('OPENAI_API_KEY no configurada');
+        throw new Error('OPENAI_API_KEY not configured');
     }
     
     const response = await fetch(`${config.baseUrl}${config.endpoint}`, {
@@ -105,7 +105,7 @@ async function callOpenAI(prompt, env, config) {
     });
     
     if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: 'Error desconocido' }));
+        const error = await response.json().catch(() => ({ error: 'Unknown error' }));
         throw new Error(`OpenAI API error: ${JSON.stringify(error)}`);
     }
     
@@ -114,12 +114,12 @@ async function callOpenAI(prompt, env, config) {
 }
 
 /**
- * Llama a la API de DeepSeek
+ * Calls DeepSeek API
  */
-async function callDeepSeek(prompt, env, config) {
+async function callDeepSeek(prompt, env, config, aiConfig) {
     const apiKey = env.DEEPSEEK_API_KEY;
     if (!apiKey) {
-        throw new Error('DEEPSEEK_API_KEY no configurada');
+        throw new Error('DEEPSEEK_API_KEY not configured');
     }
     
     const response = await fetch(`${config.baseUrl}${config.endpoint}`, {
@@ -142,7 +142,7 @@ async function callDeepSeek(prompt, env, config) {
     });
     
     if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: 'Error desconocido' }));
+        const error = await response.json().catch(() => ({ error: 'Unknown error' }));
         throw new Error(`DeepSeek API error: ${JSON.stringify(error)}`);
     }
     
@@ -151,12 +151,12 @@ async function callDeepSeek(prompt, env, config) {
 }
 
 /**
- * Llama a la API de Grok (xAI)
+ * Calls Grok (xAI) API
  */
-async function callGrok(prompt, env, config) {
+async function callGrok(prompt, env, config, aiConfig) {
     const apiKey = env.GROK_API_KEY;
     if (!apiKey) {
-        throw new Error('GROK_API_KEY no configurada');
+        throw new Error('GROK_API_KEY not configured');
     }
     
     const response = await fetch(`${config.baseUrl}${config.endpoint}`, {
@@ -179,7 +179,7 @@ async function callGrok(prompt, env, config) {
     });
     
     if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: 'Error desconocido' }));
+        const error = await response.json().catch(() => ({ error: 'Unknown error' }));
         throw new Error(`Grok API error: ${JSON.stringify(error)}`);
     }
     
@@ -188,9 +188,9 @@ async function callGrok(prompt, env, config) {
 }
 
 /**
- * Llama a Ollama (modelo local)
+ * Calls Ollama (local model)
  */
-async function callOllama(prompt, env, config) {
+async function callOllama(prompt, env, config, aiConfig) {
     const baseUrl = env.OLLAMA_BASE_URL || config.baseUrl;
     const model = env.OLLAMA_MODEL || config.model;
     
@@ -224,7 +224,7 @@ async function callOllama(prompt, env, config) {
 }
 
 /**
- * Formatea el estado del juego para el prompt
+ * Formats game state for prompt
  */
 function formatGameState(gameState) {
     const kingdoms = [];
@@ -262,11 +262,11 @@ function formatGameState(gameState) {
 }
 
 /**
- * Formatea los eventos para el prompt
+ * Formats events for prompt
  */
 function formatEvents(events) {
     if (!events || events.length === 0) {
-        return 'No hay eventos significativos en este turno.';
+        return 'No significant events in this turn.';
     }
     
     return events.map(event => {
@@ -274,17 +274,17 @@ function formatEvents(events) {
             case 'combat':
                 return `Combate: ${event.attacker} vs ${event.defender}. Ganador: ${event.winner}`;
             case 'capture':
-                return `Captura: ${event.general} fue capturada por ${event.captor}`;
+                return `Capture: ${event.general} was captured by ${event.captor}`;
             case 'province_damage':
-                return `Provincia ${event.province} recibió daño${event.destroyed ? ' y fue conquistada' : ''}`;
+                return `Province ${event.province} received damage${event.destroyed ? ' and was conquered' : ''}`;
             case 'province_conquered':
-                return `Provincia ${event.province} fue conquistada por ${event.newOwner}`;
+                return `Province ${event.province} was conquered by ${event.newOwner}`;
             case 'rest':
-                return `${event.general} descansó y recuperó ${event.hpRecovered} HP`;
+                return `${event.general} rested and recovered ${event.hpRecovered} HP`;
             case 'date':
-                return `${event.general} tuvo una cita y su amor aumentó a ${event.newLove}`;
+                return `${event.general} had a date and love increased to ${event.newLove}`;
             case 'train':
-                return `${event.general} entrenó y su fuerza aumentó a ${event.newStrength}`;
+                return `${event.general} trained and strength increased to ${event.newStrength}`;
             default:
                 return JSON.stringify(event);
         }
@@ -292,25 +292,25 @@ function formatEvents(events) {
 }
 
 /**
- * Genera una historia por defecto si todos los servicios fallan
+ * Generates a default story if all services fail
  */
 function generateDefaultStory(events) {
     if (!events || events.length === 0) {
-        return 'El reino permanece en calma. Las generales se preparan para los próximos desafíos.';
+        return 'The kingdom remains calm. The generals prepare for the challenges ahead.';
     }
     
     const eventDescriptions = events.map(e => {
         switch (e.type) {
             case 'combat':
-                return `Una batalla épica tuvo lugar entre las generales.`;
+                return `An epic battle took place between the generals.`;
             case 'capture':
-                return `Una general fue capturada en combate.`;
+                return `A general was captured in combat.`;
             case 'province_conquered':
-                return `Una provincia cambió de manos.`;
+                return `A province changed hands.`;
             default:
-                return `Eventos importantes ocurrieron en el reino.`;
+                return `Important events occurred in the kingdom.`;
         }
     }).join(' ');
     
-    return `En este turno, ${eventDescriptions} El destino de los reinos se balancea en la balanza del poder.`;
+    return `This turn, ${eventDescriptions} The fate of the kingdoms hangs in the balance of power.`;
 }

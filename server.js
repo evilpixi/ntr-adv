@@ -135,8 +135,14 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Determinar ruta del archivo
-  let filePath = path.join(PUBLIC_DIR, req.url === '/' ? 'index.html' : req.url);
+  // Manejar rutas de la aplicación (SPA routing)
+  // Si es una ruta de la app (/generals/, /kingdoms/ o /province/), servir index.html
+  if (req.url.startsWith('/generals/') || req.url.startsWith('/kingdoms/') || req.url.startsWith('/province/')) {
+    filePath = path.join(PUBLIC_DIR, 'index.html');
+  } else {
+    // Determinar ruta del archivo
+    filePath = path.join(PUBLIC_DIR, req.url === '/' ? 'index.html' : req.url);
+  }
   
   // Prevenir directory traversal
   if (!filePath.startsWith(PUBLIC_DIR)) {

@@ -1,9 +1,9 @@
 import { getGameRules } from './config.js';
 
 /**
- * Calcula el resultado de un combate entre dos generales
- * @param {General} attacker - General atacante
- * @param {General} defender - General defensora
+ * Calculates the result of combat between two generals
+ * @param {General} attacker - Attacking general
+ * @param {General} defender - Defending general
  * @returns {Object} - { winner: General, loser: General, damage: number }
  */
 export function calculateCombat(attacker, defender) {
@@ -14,7 +14,7 @@ export function calculateCombat(attacker, defender) {
     
     const finalDamage = Math.max(1, Math.floor(damage));
     
-    const attackerDead = attacker.takeDamage(Math.floor(finalDamage * 0.3)); // Atacante recibe daño reducido
+    const attackerDead = attacker.takeDamage(Math.floor(finalDamage * 0.3)); // Attacker receives reduced damage
     const defenderDead = defender.takeDamage(finalDamage);
     
     if (defenderDead) {
@@ -34,7 +34,7 @@ export function calculateCombat(attacker, defender) {
             defenderHp: defender.hp
         };
     } else {
-        // Si nadie murió, el ganador es quien tiene más HP restante
+        // If no one died, winner is whoever has more remaining HP
         if (attacker.hp > defender.hp) {
             return {
                 winner: attacker,
@@ -56,17 +56,17 @@ export function calculateCombat(attacker, defender) {
 }
 
 /**
- * Procesa un ataque a una provincia
- * @param {General} attacker - General atacante
- * @param {Province} province - Provincia objetivo
- * @param {General|null} defender - General defensora (opcional)
- * @returns {Object} - Resultado del ataque
+ * Processes an attack on a province
+ * @param {General} attacker - Attacking general
+ * @param {Province} province - Target province
+ * @param {General|null} defender - Defending general (optional)
+ * @returns {Object} - Attack result
  */
 export function processProvinceAttack(attacker, province, defender = null) {
     const events = [];
     
     if (defender) {
-        // Hay combate
+        // There is combat
         const combatResult = calculateCombat(attacker, defender);
         events.push({
             type: 'combat',
@@ -78,7 +78,7 @@ export function processProvinceAttack(attacker, province, defender = null) {
         });
         
         if (combatResult.loser.hp <= 0) {
-            // La perdedora es capturada
+            // The loser is captured
             processCapture(combatResult.loser, combatResult.winner);
             events.push({
                 type: 'capture',
@@ -87,7 +87,7 @@ export function processProvinceAttack(attacker, province, defender = null) {
             });
         }
         
-        // Si el atacante ganó, puede dañar la provincia
+        // If the attacker won, they can damage the province
         if (combatResult.winner.id === attacker.id) {
             const provinceDestroyed = province.takeDamage();
             events.push({
@@ -107,7 +107,7 @@ export function processProvinceAttack(attacker, province, defender = null) {
             }
         }
     } else {
-        // No hay defensa, ataque directo
+        // No defense, direct attack
         const provinceDestroyed = province.takeDamage();
         events.push({
             type: 'province_damage',
@@ -130,28 +130,28 @@ export function processProvinceAttack(attacker, province, defender = null) {
 }
 
 /**
- * Procesa la captura de una general
- * @param {General} general - General capturada
- * @param {General} captor - General captora
+ * Processes the capture of a general
+ * @param {General} general - Captured general
+ * @param {General} captor - Captor general
  */
 export function processCapture(general, captor) {
     general.status = 'captured';
     general.captor = captor.kingdom;
     general.location = captor.location || 'capital';
-    // Por defecto, la IA decide ponerla en aislamiento
-    // El jugador puede decidir después
+    // By default, AI decides to put her in isolation
+    // Player can decide later
     general.captureType = 'isolation';
 }
 
 /**
- * Procesa la esclavización de una general capturada
- * @param {General} general - General esclavizada
- * @param {string} captorKingdom - Reino captor
- * @returns {Object} - Resultado de la esclavización
+ * Processes the enslavement of a captured general
+ * @param {General} general - Enslaved general
+ * @param {string} captorKingdom - Captor kingdom
+ * @returns {Object} - Enslavement result
  */
 export function processEnslavement(general, captorKingdom) {
     if (general.status !== 'captured') {
-        return { success: false, error: 'La general no está capturada' };
+        return { success: false, error: 'The general is not captured' };
     }
     
     general.captureType = 'enslavement';
@@ -164,7 +164,7 @@ export function processEnslavement(general, captorKingdom) {
         return {
             success: true,
             converted: true,
-            message: `${general.name} se ha convertido en esclava de ${captorKingdom}`
+            message: `${general.name} has been converted into a slave of ${captorKingdom}`
         };
     }
     
@@ -172,34 +172,34 @@ export function processEnslavement(general, captorKingdom) {
         success: true,
         converted: false,
         love: general.love,
-        message: `${general.name} está siendo esclavizada. Amor: ${general.love}`
+        message: `${general.name} is being enslaved. Love: ${general.love}`
     };
 }
 
 /**
- * Verifica las condiciones de victoria/derrota
- * @param {GameState} gameState - Estado del juego
+ * Checks victory/defeat conditions
+ * @param {GameState} gameState - Game state
  * @returns {Object} - { gameOver: boolean, winner: string|null, loser: string|null }
  */
 export function checkVictoryConditions(gameState) {
     const playerKingdom = gameState.getPlayerKingdom();
     
-    // Verificar si el jugador perdió
+    // Check if player lost
     if (playerKingdom.isDefeated()) {
         return {
             gameOver: true,
             winner: null,
             loser: 'player',
-            message: 'Has sido derrotado. Tu reino ha caído.'
+            message: 'You have been defeated. Your kingdom has fallen.'
         };
     }
     
-    // Verificar si algún reino AI perdió
+    // Check if any AI kingdom lost
     const aiKingdoms = gameState.getAIKingdoms();
     const defeatedKingdoms = aiKingdoms.filter(k => k.isDefeated());
     
     if (defeatedKingdoms.length > 0) {
-        // Transferir todas las generales y provincias al jugador
+        // Transfer all generals and provinces to player
         defeatedKingdoms.forEach(kingdom => {
             kingdom.generals.forEach(general => {
                 general.kingdom = 'player';
@@ -215,20 +215,20 @@ export function checkVictoryConditions(gameState) {
             });
         });
         
-        // Eliminar reinos derrotados
+        // Remove defeated kingdoms
         defeatedKingdoms.forEach(kingdom => {
             gameState.kingdoms.delete(kingdom.id);
         });
     }
     
-    // Verificar si el jugador ganó (todos los reinos AI derrotados)
+    // Check if player won (all AI kingdoms defeated)
     const remainingAIKingdoms = gameState.getAIKingdoms();
     if (remainingAIKingdoms.length === 0) {
         return {
             gameOver: true,
             winner: 'player',
             loser: null,
-            message: '¡Victoria! Has conquistado todos los reinos.'
+            message: 'Victory! You have conquered all kingdoms.'
         };
     }
     
@@ -240,10 +240,10 @@ export function checkVictoryConditions(gameState) {
 }
 
 /**
- * Procesa las acciones de capital (descansar, cita, entrenar)
- * @param {General} general - General que realiza la acción
- * @param {string} actionType - Tipo de acción: 'rest', 'date', 'train'
- * @returns {Object} - Resultado de la acción
+ * Processes capital actions (rest, date, train)
+ * @param {General} general - General performing the action
+ * @param {string} actionType - Action type: 'rest', 'date', 'train'
+ * @returns {Object} - Action result
  */
 export function processCapitalAction(general, actionType) {
     const events = [];
@@ -282,7 +282,7 @@ export function processCapitalAction(general, actionType) {
             break;
             
         default:
-            return { success: false, error: 'Acción inválida', events: [] };
+            return { success: false, error: 'Invalid action', events: [] };
     }
     
     return { success: true, events };

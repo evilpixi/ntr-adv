@@ -283,6 +283,67 @@ Edita `promptTemplate` en `data/ai-config.js` para cambiar cómo se genera la na
 - Asegúrate de haber ejecutado `npm install` en el directorio del proyecto
 - Verifica que el puerto 3000 no esté en uso
 
+## 🌐 Despliegue en GitHub Pages
+
+Este proyecto puede desplegarse en GitHub Pages. El workflow de GitHub Actions se encarga automáticamente de generar el archivo `js/env.js` usando GitHub Secrets.
+
+### Configuración de GitHub Secrets
+
+1. Ve a tu repositorio en GitHub
+2. Haz clic en **Settings** → **Secrets and variables** → **Actions**
+3. Haz clic en **New repository secret**
+4. Agrega los siguientes secrets (solo los que necesites usar):
+
+   **Obligatorios:**
+   - `DEFAULT_AI_SERVICE`: El servicio de IA por defecto (`openai`, `deepseek`, `grok`, o `ollama`)
+   - `GAME_LANGUAGE`: Idioma del juego (ej: `es`, `en`)
+
+   **Opcionales (solo agrega los del servicio que uses):**
+   
+   **Para OpenAI:**
+   - `OPENAI_API_KEY`: Tu clave API de OpenAI
+   - `OPENAI_MODEL`: Modelo a usar (ej: `gpt-4`, `gpt-3.5-turbo`)
+   - `OPENAI_BASE_URL`: URL base (por defecto: `https://api.openai.com/v1`)
+   
+   **Para DeepSeek:**
+   - `DEEPSEEK_API_KEY`: Tu clave API de DeepSeek
+   - `DEEPSEEK_MODEL`: Modelo a usar (por defecto: `deepseek-chat`)
+   - `DEEPSEEK_BASE_URL`: URL base (por defecto: `https://api.deepseek.com/v1`)
+   
+   **Para Grok (xAI):**
+   - `GROK_API_KEY`: Tu clave API de Grok
+   - `GROK_MODEL`: Modelo a usar (por defecto: `grok-beta`)
+   - `GROK_BASE_URL`: URL base (por defecto: `https://api.x.ai/v1`)
+   
+   **Para Ollama (local):**
+   - `OLLAMA_BASE_URL`: URL de tu servidor Ollama (por defecto: `http://localhost:11434`)
+   - `OLLAMA_MODEL`: Modelo a usar (por defecto: `llama2`)
+
+### Habilitar GitHub Pages
+
+1. Ve a **Settings** → **Pages**
+2. En **Source**, selecciona:
+   - **Source**: `GitHub Actions` (no "Deploy from a branch")
+3. El workflow se ejecutará automáticamente cuando hagas push a `main` o `dev`
+4. También puedes ejecutarlo manualmente desde la pestaña **Actions**
+
+### Notas Importantes
+
+- ⚠️ **Nunca subas claves API reales al código**. El archivo `js/env.js` en el repositorio solo contiene placeholders.
+- Las claves se inyectan automáticamente durante el deploy usando GitHub Secrets.
+- Si no configuras los secrets, el juego funcionará pero las funciones de IA no estarán disponibles.
+- El workflow está configurado para desplegar desde las ramas `main` y `dev`.
+
+### Despliegue Manual (sin GitHub Actions)
+
+Si prefieres no usar GitHub Actions, puedes:
+
+1. Editar manualmente `js/env.js` con tus claves (⚠️ **NO recomendado para repositorios públicos**)
+2. Configurar GitHub Pages para servir desde la rama `main` o `dev`
+3. El juego funcionará, pero las claves estarán visibles en el código
+
+**Recomendación**: Usa siempre GitHub Secrets para mantener tus claves seguras.
+
 ## 📝 Licencia
 
 Este proyecto es de código abierto. Siéntete libre de modificarlo y usarlo como desees.

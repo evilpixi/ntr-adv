@@ -53,7 +53,8 @@ function validateUniqueIds() {
  * Valida formato de URLs de imagen
  */
 function validateImageUrls() {
-    const urlPattern = /^(https?:\/\/|data:image\/|\/)/;
+    // Acepta: http/https, data:image/, rutas absolutas (/), y rutas relativas (../ o ./)
+    const urlPattern = /^(https?:\/\/|data:image\/|\/|\.\.\/|\.\/)/;
     
     for (const kingdom of kingdoms) {
         if (kingdom.imageUrl && !urlPattern.test(kingdom.imageUrl)) {
@@ -142,6 +143,33 @@ export function getProvinceImage(kingdomId, provinceIndex) {
     const provinces = provinceNames[kingdomId] || [];
     if (provinces[provinceIndex]) {
         return provinces[provinceIndex].imageUrl || null;
+    }
+    return null;
+}
+
+// Helper para obtener descripción de una provincia
+export function getProvinceDescription(kingdomId, provinceIndex) {
+    const provinces = provinceNames[kingdomId] || [];
+    if (provinces[provinceIndex]) {
+        return provinces[provinceIndex].description || null;
+    }
+    return null;
+}
+
+// Helper para obtener prompt de una provincia
+export function getProvincePrompt(kingdomId, provinceIndex) {
+    const provinces = provinceNames[kingdomId] || [];
+    if (provinces[provinceIndex]) {
+        return provinces[provinceIndex].prompt || null;
+    }
+    return null;
+}
+
+// Helper para obtener toda la información de una provincia
+export function getProvinceInfo(kingdomId, provinceIndex) {
+    const provinces = provinceNames[kingdomId] || [];
+    if (provinces[provinceIndex]) {
+        return provinces[provinceIndex];
     }
     return null;
 }

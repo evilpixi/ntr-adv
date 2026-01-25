@@ -1,6 +1,6 @@
 /**
- * GameDataLoader - Singleton para cargar y almacenar todos los datos del juego en memoria
- * Todos los datos se cargan una vez al inicio y pueden modificarse en runtime
+ * GameDataLoader - Singleton to load and store all game data in memory
+ * All data is loaded once at start and can be modified at runtime
  */
 
 class GameDataLoader {
@@ -15,19 +15,19 @@ class GameDataLoader {
     }
 
     /**
-     * Carga todos los datos del juego al inicio
+     * Loads all game data at start
      */
     async load() {
         if (this.loaded) {
-            console.warn('Los datos ya están cargados');
+            console.warn('Data already loaded');
             return;
         }
 
         try {
-            // Cargar datos predeterminados
+            // Load default data
             const defaultData = await import('../data/index.js');
             
-            // Inicializar con datos predeterminados
+            // Initialize with default data
             this.kingdoms = [...(defaultData.KINGDOMS || [])];
             this.generals = [...(defaultData.GENERALS || [])];
             this.provinces = { ...(defaultData.PROVINCE_NAMES || {}) };
@@ -35,54 +35,54 @@ class GameDataLoader {
             this.aiConfig = { ...(defaultData.AI_CONFIG || {}) };
             this.promptTemplate = defaultData.PROMPT_TEMPLATE || '';
 
-            // Intentar cargar datos personalizados si existen
+            // Try to load custom data if exists
             try {
                 const customData = await import('../data/custom-data.js');
                 
-                // Fusionar reinos (custom sobrescribe predeterminados)
+                // Merge kingdoms (custom overrides defaults)
                 if (customData.customKingdoms && customData.customKingdoms.length > 0) {
                     this.kingdoms = this.mergeArrays(this.kingdoms, customData.customKingdoms, 'id');
                 }
                 
-                // Fusionar generales
+                // Merge generals
                 if (customData.customGenerals && customData.customGenerals.length > 0) {
                     this.generals = this.mergeArrays(this.generals, customData.customGenerals, 'id');
                 }
                 
-                // Fusionar provincias
+                // Merge provinces
                 if (customData.customProvinces) {
                     this.provinces = { ...this.provinces, ...customData.customProvinces };
                 }
                 
-                // Fusionar reglas del juego
+                // Merge game rules
                 if (customData.customGameRules) {
                     this.gameRules = { ...this.gameRules, ...customData.customGameRules };
                 }
                 
-                // Fusionar configuración de IA
+                // Merge AI configuration
                 if (customData.customAIConfig) {
                     this.aiConfig = { ...this.aiConfig, ...customData.customAIConfig };
                 }
                 
-                console.log('Datos personalizados cargados y fusionados');
+                console.log('Custom data loaded and merged');
             } catch (e) {
-                // custom-data.js no existe, continuar con datos predeterminados
-                console.log('No se encontró custom-data.js, usando datos predeterminados');
+                // custom-data.js doesn't exist, continue with default data
+                console.log('custom-data.js not found, using default data');
             }
 
-            // Validar datos cargados
+            // Validate loaded data
             this.validate();
 
             this.loaded = true;
-            console.log('Datos del juego cargados exitosamente en memoria');
+            console.log('Game data loaded successfully in memory');
         } catch (error) {
-            console.error('Error cargando datos del juego:', error);
+            console.error('Error loading game data:', error);
             throw error;
         }
     }
 
     /**
-     * Fusiona dos arrays, sobrescribiendo elementos con el mismo id
+     * Merges two arrays, overwriting elements with the same id
      */
     mergeArrays(baseArray, overrideArray, idKey) {
         const result = [...baseArray];
@@ -98,29 +98,29 @@ class GameDataLoader {
     }
 
     /**
-     * Valida que los datos cargados sean válidos
+     * Validates that loaded data is valid
      */
     validate() {
         const kingdomIds = new Set();
         const generalIds = new Set();
-
-        // Validar reinos
+        
+        // Validate kingdoms
         for (const kingdom of this.kingdoms) {
             if (kingdomIds.has(kingdom.id)) {
-                console.warn(`Reino duplicado: ${kingdom.id}`);
+                console.warn(`Duplicate kingdom: ${kingdom.id}`);
             }
             kingdomIds.add(kingdom.id);
         }
-
-        // Validar generales
+        
+        // Validate generals
         for (const general of this.generals) {
             if (generalIds.has(general.id)) {
-                console.warn(`General duplicado: ${general.id}`);
+                console.warn(`Duplicate general: ${general.id}`);
             }
             generalIds.add(general.id);
-
+            
             if (!kingdomIds.has(general.kingdom)) {
-                console.warn(`General ${general.id} referencia reino inexistente: ${general.kingdom}`);
+                console.warn(`General ${general.id} references non-existent kingdom: ${general.kingdom}`);
             }
         }
     }
@@ -182,7 +182,34 @@ class GameDataLoader {
         return null;
     }
 
-    // Setters para modificar datos en runtime
+    getProvinceDescription(kingdomId, provinceIndex) {
+        const provinces = this.provinces[kingdomId] || [];
+        if (provinces[provinceIndex]) {
+            const province = provinces[provinceIndex];
+            return typeof province === 'string' ? null : (province.description || null);
+        }
+        return null;
+    }
+
+    getProvincePrompt(kingdomId, provinceIndex) {
+        const provinces = this.provinces[kingdomId] || [];
+        if (provinces[provinceIndex]) {
+            const province = provinces[provinceIndex];
+            return typeof province === 'string' ? null : (province.prompt || null);
+        }
+        return null;
+    }
+
+    getProvinceInfo(kingdomId, provinceIndex) {
+        const provinces = this.provinces[kingdomId] || [];
+        if (provinces[provinceIndex]) {
+            const province = provinces[provinceIndex];
+            return typeof province === 'string' ? { name: province } : province;
+        }
+        return null;
+    }
+
+    // Setters to modify data at runtime
     setKingdoms(kingdoms) {
         this.kingdoms = kingdoms;
     }
@@ -203,7 +230,7 @@ class GameDataLoader {
         this.aiConfig = config;
     }
 
-    // Métodos para agregar/modificar elementos individuales
+    // Methods to add/modify individual elements
     addKingdom(kingdom) {
         this.kingdoms.push(kingdom);
     }

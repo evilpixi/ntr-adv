@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>NTR Adventure - Documentación de Diseño del Juego</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            background-attachment: fixed;
+            color: #e0e0e0;
+            line-height: 1.6;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 30px;
+            text-align: center;
+            border-bottom: 3px solid #8b0000;
+            margin-bottom: 30px;
+            border-radius: 10px;
+        }
+
+        h1 {
+            color: #ff6b6b;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            word-wrap: break-word;
+        }
+
+        .subtitle {
+            color: #ccc;
+            font-size: 1.2em;
+        }
+
+        nav {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        nav a {
+            color: #ff6b6b;
+            text-decoration: none;
+            padding: 10px 20px;
+            border: 2px solid #8b0000;
+            border-radius: 5px;
+            transition: all 0.3s;
+            display: block;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        nav a:hover {
+            background: #8b0000;
+            color: #fff;
+            transform: translateY(-2px);
+        }
+
+        nav a:active {
+            transform: translateY(0);
+            background: #8b0000;
+            color: #fff;
+        }
+
+        @media (hover: none) {
+            nav a:hover {
+                transform: none;
+            }
+        }
+
+        section {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 30px;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            border-left: 5px solid #8b0000;
+            overflow-x: hidden;
+        }
+
+        h2 {
+            color: #ff6b6b;
+            font-size: 2em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #8b0000;
+            word-wrap: break-word;
+        }
+
+        h3 {
+            color: #ff8c8c;
+            font-size: 1.5em;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            word-wrap: break-word;
+        }
+
+        h4 {
+            color: #ffaaaa;
+            font-size: 1.2em;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            word-wrap: break-word;
+        }
+
+        p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+
+        ul, ol {
+            margin-left: 30px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .gameplay-type {
+            background: rgba(139, 0, 0, 0.2);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #8b0000;
+        }
+
+        .gameplay-type h4 {
+            color: #ff6b6b;
+            margin-top: 0;
+        }
+
+        .mechanic-box {
+            background: rgba(139, 0, 0, 0.15);
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border-left: 3px solid #ff6b6b;
+        }
+
+        .kingdom-card {
+            background: rgba(139, 0, 0, 0.2);
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border: 1px solid #8b0000;
+        }
+
+        .kingdom-card h4 {
+            color: #ff6b6b;
+            margin-top: 0;
+        }
+
+        .general-item {
+            background: rgba(139, 0, 0, 0.1);
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 2px solid #ff8c8c;
+        }
+
+        .province-item {
+            background: rgba(139, 0, 0, 0.1);
+            padding: 8px;
+            margin: 8px 0;
+            border-radius: 5px;
+        }
+
+        .highlight {
+            background: rgba(255, 107, 107, 0.2);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            background: #8b0000;
+            color: #fff;
+            border-radius: 3px;
+            font-size: 0.9em;
+            margin: 0 5px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 20px 0;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+            min-width: 500px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #8b0000;
+            word-wrap: break-word;
+        }
+
+        th {
+            background: rgba(139, 0, 0, 0.3);
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background: rgba(139, 0, 0, 0.1);
+        }
+
+        .warning {
+            background: rgba(255, 193, 7, 0.2);
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .info {
+            background: rgba(0, 123, 255, 0.2);
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        /* Tablet */
+        @media (max-width: 1024px) {
+            .container {
+                padding: 15px;
+            }
+
+            header {
+                padding: 20px;
+            }
+
+            section {
+                padding: 20px;
+            }
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            header {
+                padding: 15px;
+                margin-bottom: 20px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+                margin-bottom: 8px;
+            }
+
+            .subtitle {
+                font-size: 1em;
+            }
+
+            nav {
+                padding: 15px 10px;
+                margin-bottom: 20px;
+            }
+
+            nav ul {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            nav a {
+                padding: 12px 15px;
+                font-size: 0.95em;
+            }
+
+            section {
+                padding: 15px;
+                margin-bottom: 20px;
+                border-left-width: 3px;
+            }
+
+            h2 {
+                font-size: 1.5em;
+                margin-bottom: 15px;
+                padding-bottom: 8px;
+            }
+
+            h3 {
+                font-size: 1.3em;
+                margin-top: 20px;
+                margin-bottom: 12px;
+            }
+
+            h4 {
+                font-size: 1.1em;
+                margin-top: 15px;
+                margin-bottom: 8px;
+            }
+
+            h5 {
+                font-size: 1em;
+                margin-top: 12px;
+                margin-bottom: 8px;
+            }
+
+            p {
+                font-size: 0.95em;
+                margin-bottom: 12px;
+            }
+
+            ul, ol {
+                margin-left: 20px;
+                margin-bottom: 12px;
+                font-size: 0.95em;
+            }
+
+            li {
+                margin-bottom: 6px;
+            }
+
+            .gameplay-type {
+                padding: 15px;
+                margin: 15px 0;
+            }
+
+            .mechanic-box {
+                padding: 12px;
+                margin: 12px 0;
+            }
+
+            .kingdom-card {
+                padding: 15px;
+                margin: 12px 0;
+            }
+
+            .general-item {
+                padding: 8px;
+                margin: 8px 0;
+            }
+
+            .province-item {
+                padding: 6px;
+                margin: 6px 0;
+            }
+
+            .warning, .info {
+                padding: 12px;
+                margin: 15px 0;
+                font-size: 0.9em;
+            }
+
+            .badge {
+                padding: 4px 8px;
+                font-size: 0.85em;
+                margin: 0 3px;
+            }
+
+            .highlight {
+                padding: 2px 4px;
+                font-size: 0.95em;
+            }
+
+            th, td {
+                padding: 8px 6px;
+                font-size: 0.9em;
+            }
+
+            table {
+                min-width: 400px;
+            }
+        }
+
+        /* Small Mobile */
+        @media (max-width: 480px) {
+            .container {
+                padding: 8px;
+            }
+
+            header {
+                padding: 12px;
+                border-radius: 8px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .subtitle {
+                font-size: 0.9em;
+            }
+
+            nav {
+                padding: 12px 8px;
+            }
+
+            nav a {
+                padding: 10px 12px;
+                font-size: 0.9em;
+            }
+
+            section {
+                padding: 12px;
+                border-radius: 8px;
+            }
+
+            h2 {
+                font-size: 1.3em;
+            }
+
+            h3 {
+                font-size: 1.2em;
+            }
+
+            h4 {
+                font-size: 1.05em;
+            }
+
+            p, li {
+                font-size: 0.9em;
+            }
+
+            ul, ol {
+                margin-left: 18px;
+            }
+
+            .gameplay-type, .mechanic-box, .kingdom-card {
+                padding: 12px;
+            }
+
+            th, td {
+                padding: 6px 4px;
+                font-size: 0.85em;
+            }
+
+            table {
+                min-width: 350px;
+            }
+
+            footer {
+                padding: 20px 15px !important;
+                margin-top: 30px !important;
+            }
+
+            footer p {
+                font-size: 0.85em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>NTR Adventure</h1>
+            <p class="subtitle">Documentación Completa de Diseño del Juego</p>
+        </header>
+
+        <nav>
+            <ul>
+                <li><a href="#reglas">Reglas del Juego</a></li>
+                <li><a href="#review">Review del Gameplay</a></li>
+                <li><a href="#reinos">Reinos y Provincias</a></li>
+                <li><a href="#generales">Generales</a></li>
+                <li><a href="#propuestas">Propuestas de Gameplay</a></li>
+                <li><a href="#mecanicas">Mecánicas Extra</a></li>
+            </ul>
+        </nav>
+
+        <!-- SECCIÓN 1: REGLAS DEL JUEGO -->
+        <section id="reglas">
+            <h2>📜 Reglas del Juego</h2>
+            
+            <h3>Concepto Central</h3>
+            <p>
+                <span class="highlight">NTR Adventure</span> es un juego de estrategia por turnos con temática NTR (Netorare/Cuckold) 
+                donde el jugador controla un rey o reina cuyo objetivo es conquistar otros reinos. El elemento central del juego es que 
+                cuando las generales del jugador son capturadas por enemigos, son <span class="highlight">secuestradas y violadas</span>, 
+                humillando al rey/reina que las comandaba. El rey es esencialmente <span class="highlight">cuckeado</span> al ver cómo 
+                sus generales más leales son degradadas y convertidas en esclavas de sus enemigos.
+            </p>
+
+            <h3>Mecánicas Básicas</h3>
+            <div class="mechanic-box">
+                <h4>Sistema de Turnos</h4>
+                <p>El juego se desarrolla por turnos. En cada turno:</p>
+                <ul>
+                    <li>El jugador asigna acciones a sus generales disponibles</li>
+                    <li>La IA controla los reinos enemigos y sus generales</li>
+                    <li>Se procesan todas las acciones simultáneamente</li>
+                    <li>Se generan eventos y narrativas basadas en los resultados</li>
+                    <li>Se actualiza el estado del juego</li>
+                </ul>
+            </div>
+
+            <div class="mechanic-box">
+                <h4>Acciones Disponibles</h4>
+                <p>Las generales pueden realizar las siguientes acciones:</p>
+                <ul>
+                    <li><strong>Ataque</strong>: Atacar una provincia enemiga. Si hay una general defendiendo, se produce combate.</li>
+                    <li><strong>Defensa</strong>: Defender una provincia propia. La general permanece en la provincia para protegerla.</li>
+                    <li><strong>Descanso</strong>: Recuperar HP en la capital (+20 HP por turno).</li>
+                    <li><strong>Cita</strong>: Aumentar el amor con el rey en la capital (+10 amor por turno).</li>
+                    <li><strong>Entrenamiento</strong>: Aumentar la fuerza en la capital (+2 fuerza por turno).</li>
+                </ul>
+            </div>
+
+            <h3>Sistema de Combate</h3>
+            <div class="mechanic-box">
+                <h4>Cálculo de Daño</h4>
+                <p>El daño en combate se calcula con la siguiente fórmula:</p>
+                <ul>
+                    <li><strong>Daño Base</strong>: 5 puntos</li>
+                    <li><strong>Daño Aleatorio</strong>: 0-10 puntos adicionales</li>
+                    <li><strong>Modificador de Fuerza</strong>: +fuerza del atacante</li>
+                    <li><strong>Reducción de Defensa</strong>: -fuerza del defensor / 2</li>
+                    <li><strong>Daño Final</strong>: Base + Aleatorio + Fuerza Atacante - (Fuerza Defensor / 2)</li>
+                </ul>
+                <p>El atacante recibe el 30% del daño calculado, mientras que el defensor recibe el 100%.</p>
+            </div>
+
+            <div class="mechanic-box">
+                <h4>Captura de Generales</h4>
+                <p>Cuando una general es derrotada en combate (HP llega a 0):</p>
+                <ul>
+                    <li>Su estado cambia a <span class="badge">Capturada</span></li>
+                    <li>Es transferida al reino del captor</li>
+                    <li>Se le asigna un tipo de captura: <strong>Aislamiento</strong> o <strong>Esclavización</strong></li>
+                    <li>En este momento, la general es <span class="highlight">violada y humillada</span> por sus captores</li>
+                    <li>El rey/reina que la comandaba es <span class="highlight">cuckeado</span>, presenciando (o siendo informado de) la degradación de su general</li>
+                </ul>
+            </div>
+
+            <div class="mechanic-box">
+                <h4>Conquista de Provincias</h4>
+                <p>Las provincias tienen HP máximo de 3. Cuando una provincia es atacada:</p>
+                <ul>
+                    <li>Si hay una general defendiendo, primero se resuelve el combate</li>
+                    <li>Si no hay defensa o el atacante gana, la provincia recibe 1 punto de daño</li>
+                    <li>Cuando el HP de una provincia llega a 0, es conquistada</li>
+                    <li>La provincia cambia de dueño al reino conquistador</li>
+                    <li>Si la capital es conquistada, el reino puede ser derrotado</li>
+                </ul>
+            </div>
+
+            <h3>Sistema de Amor y Lealtad</h3>
+            <div class="mechanic-box">
+                <h4>Estadística de Amor</h4>
+                <p>El amor es una estadística clave que determina la lealtad de una general:</p>
+                <ul>
+                    <li><strong>Rango</strong>: 0-100</li>
+                    <li><strong>Aumento</strong>: +10 por cita en la capital</li>
+                    <li><strong>Disminución</strong>: -10 por turno durante esclavización</li>
+                    <li><strong>Conversión</strong>: Cuando el amor llega a 0 durante la esclavización, la general se convierte en esclava</li>
+                    <li>Una general convertida cambia permanentemente de bando y no puede ser recuperada</li>
+                </ul>
+            </div>
+
+            <div class="mechanic-box">
+                <h4>Estados de Generales</h4>
+                <ul>
+                    <li><span class="badge">Libre</span>: Estado normal, puede realizar acciones</li>
+                    <li><span class="badge">Capturada</span>: Fue derrotada en combate, está en poder del enemigo y siendo violada</li>
+                    <li><span class="badge">Esclava</span>: Su amor llegó a 0, se convirtió permanentemente al bando enemigo</li>
+                </ul>
+            </div>
+
+            <h3>Condiciones de Victoria</h3>
+            <div class="mechanic-box">
+                <p>El juego termina cuando:</p>
+                <ul>
+                    <li><strong>Victoria del Jugador</strong>: Todos los reinos enemigos son derrotados (pierden su capital y todas sus provincias)</li>
+                    <li><strong>Derrota del Jugador</strong>: El reino del jugador pierde su capital y todas sus provincias</li>
+                </ul>
+                <p>Un reino es derrotado cuando pierde su capital y todas sus provincias. En ese momento, todas sus generales y provincias restantes son transferidas al conquistador.</p>
+            </div>
+
+            <div class="warning">
+                <strong>⚠️ Tema NTR/Cuckold:</strong> El elemento central del juego es la humillación del rey/reina cuando sus generales son capturadas. 
+                Cada captura implica violación y degradación explícita de la general, y el rey es cuckeado al ser forzado a presenciar o conocer estos actos. 
+                Este es el mecanismo principal de tensión emocional y narrativa del juego.
+            </div>
+        </section>
+
+        <!-- SECCIÓN 2: REVIEW DEL GAMEPLAY -->
+        <section id="review">
+            <h2>🎮 Review del Gameplay Actual</h2>
+
+            <h3>Fortalezas</h3>
+            <div class="mechanic-box">
+                <ul>
+                    <li><strong>Sistema de Combate Funcional</strong>: El sistema de combate está bien implementado con cálculos de daño balanceados y mecánicas claras de captura.</li>
+                    <li><strong>Integración con LLM</strong>: La generación de narrativas usando LLM añade profundidad y variabilidad a cada partida.</li>
+                    <li><strong>Múltiples Reinos y Generales</strong>: Hay una buena variedad de personajes con personalidades y especialidades únicas.</li>
+                    <li><strong>Sistema de Estados</strong>: Los estados de generales (libre, capturada, esclava) crean tensión narrativa.</li>
+                    <li><strong>Interfaz Funcional</strong>: La UI permite gestionar acciones y ver el estado del juego claramente.</li>
+                </ul>
+            </div>
+
+            <h3>Debilidades</h3>
+            <div class="mechanic-box">
+                <ul>
+                    <li><strong>Mecánicas Limitadas</strong>: El juego actual tiene pocas opciones estratégicas. Las acciones son básicas y predecibles.</li>
+                    <li><strong>Falta de Profundidad Estratégica</strong>: No hay recursos, diplomacia, o decisiones complejas que afecten el resultado.</li>
+                    <li><strong>Recursos y Tropas No Implementados</strong>: El juego menciona conceptos pero no los implementa como mecánicas jugables.</li>
+                    <li><strong>Interacción Limitada con Generales Capturadas</strong>: Una vez capturada, la general simplemente pierde amor. No hay eventos específicos de violación o degradación.</li>
+                    <li><strong>Falta de Eventos Aleatorios</strong>: El juego es muy determinista. No hay sorpresas o eventos inesperados.</li>
+                    <li><strong>Narrativa NTR Superficial</strong>: Aunque el tema es NTR, las mecánicas no reflejan profundamente la humillación y degradación del cuckold.</li>
+                    <li><strong>No Hay Mecánicas de Recuperación</strong>: Una vez que una general es capturada, no hay forma de intentar rescatarla o negociar su liberación.</li>
+                </ul>
+            </div>
+
+            <h3>Áreas de Mejora</h3>
+            <div class="mechanic-box">
+                <h4>Prioridad Alta</h4>
+                <ul>
+                    <li><strong>Eventos de Violación Detallados</strong>: Implementar escenas específicas cuando una general es capturada, con múltiples variantes según el reino captor.</li>
+                    <li><strong>Sistema de Cuckold Points</strong>: Una estadística que rastrea cuántas veces el rey ha sido cuckeado, afectando su prestigio y la moral del reino.</li>
+                    <li><strong>Mecánicas de Degradación Visual</strong>: Las generales deberían cambiar visualmente según su nivel de degradación y violaciones sufridas.</li>
+                    <li><strong>Eventos de Traición</strong>: Generales con amor bajo deberían poder traicionar al rey y unirse al enemigo voluntariamente.</li>
+                </ul>
+
+                <h4>Prioridad Media</h4>
+                <ul>
+                    <li><strong>Sistema de Recursos</strong>: Oro, prestigio, influencia para añadir capas estratégicas.</li>
+                    <li><strong>Sistema de Tropas</strong>: Unidades militares que acompañan a las generales en combate.</li>
+                    <li><strong>Diplomacia</strong>: Negociaciones, alianzas temporales, intercambios de generales capturadas.</li>
+                    <li><strong>Eventos Aleatorios</strong>: Intrigas, traiciones, seducciones que ocurren espontáneamente.</li>
+                </ul>
+
+                <h4>Prioridad Baja</h4>
+                <ul>
+                    <li><strong>Sistema de Logros</strong>: Desbloquear contenido especial basado en acciones del jugador.</li>
+                    <li><strong>Múltiples Finales</strong>: Diferentes desenlaces según las decisiones del jugador.</li>
+                    <li><strong>Modo Historia</strong>: Campaña con narrativa predefinida.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 3: REINOS, PROVINCIAS Y GENERALES -->
+        <section id="reinos">
+            <h2>🏰 Reinos y Provincias</h2>
+
+            <div class="kingdom-card">
+                <h4>👑 Adeh (Reino del Jugador)</h4>
+                <p><strong>Tema</strong>: Real, Imperial</p>
+                <p><strong>Descripción</strong>: El reino real, centro de poder y balance en el mundo. Arquitectura clásica imperial con palacios de mármol blanco y dorado.</p>
+                <p><strong>Gobierno</strong>: Monarquía constitucional con consejo de nobles.</p>
+                <p><strong>Provincias</strong>: 7 provincias</p>
+                <ul>
+                    <li><strong>Royal Capital of Adeh</strong>: La capital, corazón del reino con el palacio real.</li>
+                    <li><strong>Northern Province</strong>: Tierras fértiles del norte con fortalezas defensivas.</li>
+                    <li><strong>Southern Province</strong>: Región costera con puertos comerciales prósperos.</li>
+                    <li><strong>Eastern Province</strong>: Tierras montañosas con minas de recursos.</li>
+                    <li><strong>Western Province</strong>: Frontera con bosques antiguos y fortalezas.</li>
+                    <li><strong>Central Province</strong>: Corazón geográfico, cruce de caminos y comunicación.</li>
+                    <li><strong>Border Province</strong>: Límite del reino, donde la civilización se encuentra con tierras salvajes.</li>
+                </ul>
+            </div>
+
+            <div class="kingdom-card">
+                <h4>❄️ Glacia (Reino de Hielo)</h4>
+                <p><strong>Tema</strong>: Hielo, Frío Eterno</p>
+                <p><strong>Descripción</strong>: Reino de hielo eterno donde los vientos helados soplan sin cesar y la nieve nunca se derrite.</p>
+                <p><strong>Gobierno</strong>: Teocracia congelada gobernada por el Gran Consejo de Ancianos del Hielo.</p>
+                <p><strong>Provincias</strong>: 3 provincias</p>
+                <ul>
+                    <li><strong>Ice Fortress</strong>: La capital congelada, fortaleza imponente tallada en hielo eterno.</li>
+                    <li><strong>Frozen Tundra</strong>: Vastas extensiones de tundra ártica con campos de hielo infinitos.</li>
+                    <li><strong>Eternal Glaciers</strong>: Montañas de hielo milenarias con cuevas de cristal y cascadas congeladas.</li>
+                </ul>
+                <p><strong>Generales</strong>: 1 general (Frost)</p>
+            </div>
+
+            <div class="kingdom-card">
+                <h4>🔥 Ignis (Reino de Fuego)</h4>
+                <p><strong>Tema</strong>: Fuego, Volcánico</p>
+                <p><strong>Descripción</strong>: Reino volcánico donde la lava fluye como ríos y el fuego es la esencia de la vida.</p>
+                <p><strong>Gobierno</strong>: Dictadura militar liderada por un Señor del Fuego que gobierna con puño de hierro.</p>
+                <p><strong>Provincias</strong>: 3 provincias</p>
+                <ul>
+                    <li><strong>Volcanic City</strong>: La capital construida sobre y alrededor de un volcán activo.</li>
+                    <li><strong>Burning Plains</strong>: Vastas llanuras de ceniza y campos de lava activos.</li>
+                    <li><strong>Fire Craters</strong>: Región de múltiples cráteres volcánicos activos donde el magma burbujea constantemente.</li>
+                </ul>
+                <p><strong>Generales</strong>: 2 generales (Ember, Blaze)</p>
+            </div>
+
+            <div class="kingdom-card">
+                <h4>⚡ Tempestas (Reino de Tormentas)</h4>
+                <p><strong>Tema</strong>: Tormenta, Viento, Rayos</p>
+                <p><strong>Descripción</strong>: Reino de tormentas eternas donde los relámpagos iluminan el cielo y los vientos rugen con furia.</p>
+                <p><strong>Gobierno</strong>: República electiva donde los líderes son elegidos por su capacidad de controlar tormentas.</p>
+                <p><strong>Provincias</strong>: 4 provincias</p>
+                <ul>
+                    <li><strong>Storm Tower</strong>: La capital, una torre imponente que se eleva hacia las nubes de tormenta.</li>
+                    <li><strong>Lightning Lands</strong>: Llanuras azotadas por vientos constantes donde los relámpagos iluminan el paisaje.</li>
+                    <li><strong>Wind Cliffs</strong>: Montañas escarpadas donde se concentran las tormentas más poderosas.</li>
+                    <li><strong>Storm Sea</strong>: Vastas extensiones donde las nubes de tormenta se encuentran con la tierra.</li>
+                </ul>
+                <p><strong>Generales</strong>: 2 generales (Storm, Thunder)</p>
+            </div>
+
+            <div class="kingdom-card">
+                <h4>🌑 Umbra (Reino de Sombras)</h4>
+                <p><strong>Tema</strong>: Sombra, Oscuridad, Secreto</p>
+                <p><strong>Descripción</strong>: Reino de sombras profundas donde reina la oscuridad y los secretos se ocultan en el crepúsculo.</p>
+                <p><strong>Gobierno</strong>: Oligarquía secreta gobernada por un consejo de sombras que opera desde las profundidades.</p>
+                <p><strong>Provincias</strong>: 4 provincias</p>
+                <ul>
+                    <li><strong>Shadow Citadel</strong>: La capital oculta, una ciudadela subterránea que emerge de la oscuridad.</li>
+                    <li><strong>Shadow Forest</strong>: Bosques oscuros donde la luz del sol nunca penetra completamente.</li>
+                    <li><strong>Forgotten Crypts</strong>: Laberintos subterráneos de tumbas y criptas antiguas donde se guardan los secretos del reino.</li>
+                    <li><strong>Eternal Mist</strong>: Tierras envueltas en niebla perpetua que oculta todo de la vista.</li>
+                </ul>
+                <p><strong>Generales</strong>: 3 generales (Shadow, Night, Dark)</p>
+            </div>
+        </section>
+
+        <section id="generales">
+            <h2>⚔️ Generales</h2>
+
+            <h3>Generales del Jugador (Adeh)</h3>
+            
+            <div class="general-item">
+                <h4>👑 Aria</h4>
+                <p><strong>Especialidad</strong>: Estrategia y tácticas de campo abierto</p>
+                <p><strong>Personalidad</strong>: Líder natural con mente analítica excepcional. Valora el honor y la justicia por encima de todo.</p>
+                <p><strong>Relaciones</strong>: Muy cercana a Luna, su segundo al mando</p>
+                <p><strong>Riesgo NTR</strong>: Alta - Su lealtad al rey la hace especialmente vulnerable a la humillación cuando es capturada</p>
+            </div>
+
+            <div class="general-item">
+                <h4>🛡️ Luna</h4>
+                <p><strong>Especialidad</strong>: Defensa de fortalezas y protección de objetivos</p>
+                <p><strong>Personalidad</strong>: Protectora por naturaleza, siempre alerta y lista para defender a otros. Instinto maternal hacia sus soldados.</p>
+                <p><strong>Relaciones</strong>: Mejor amiga de Aria, actúa como su escudo</p>
+                <p><strong>Riesgo NTR</strong>: Muy Alta - Su naturaleza protectora hace que su violación sea especialmente humillante para el rey</p>
+            </div>
+
+            <div class="general-item">
+                <h4>🌸 Sakura</h4>
+                <p><strong>Especialidad</strong>: Negociaciones, espionaje y guerra psicológica</p>
+                <p><strong>Personalidad</strong>: Diplomática y carismática, puede leer a las personas como un libro abierto.</p>
+                <p><strong>Relaciones</strong>: Respetada por todos, especialmente cercana a Maya</p>
+                <p><strong>Riesgo NTR</strong>: Media - Su naturaleza diplomática puede hacerla más susceptible a la seducción y traición</p>
+            </div>
+
+            <div class="general-item">
+                <h4>🐴 Maya</h4>
+                <p><strong>Especialidad</strong>: Ataques rápidos, reconocimiento y guerra de guerrillas</p>
+                <p><strong>Personalidad</strong>: Energética y apasionada, ama la velocidad y la acción. Espíritu libre y rebelde.</p>
+                <p><strong>Relaciones</strong>: Amiga cercana de Sakura, conexión especial con su montura</p>
+                <p><strong>Riesgo NTR</strong>: Alta - Su espíritu libre puede hacerla más propensa a la traición si su amor baja</p>
+            </div>
+
+            <div class="general-item">
+                <h4>🗡️ Zara</h4>
+                <p><strong>Especialidad</strong>: Operaciones especiales, infiltración y combate cuerpo a cuerpo</p>
+                <p><strong>Personalidad</strong>: Intensa y enfocada, perfeccionista en el campo de batalla. Reservada y misteriosa.</p>
+                <p><strong>Relaciones</strong>: Mantiene distancia profesional con todos</p>
+                <p><strong>Riesgo NTR</strong>: Media - Su naturaleza reservada puede hacerla más resistente, pero su violación sería especialmente degradante</p>
+            </div>
+
+            <h3>Generales Enemigas</h3>
+
+            <h4>❄️ Glacia</h4>
+            <div class="general-item">
+                <h4>Frost</h4>
+                <p><strong>Especialidad</strong>: Magia de hielo, defensa en terreno congelado y guerra invernal</p>
+                <p><strong>Personalidad</strong>: Serena y calculadora como el hielo mismo, rara vez muestra emoción.</p>
+                <p><strong>Estilo de Captura</strong>: Metódico y frío. Las violaciones son calculadas y prolongadas, diseñadas para romper la resistencia mental.</p>
+            </div>
+
+            <h4>🔥 Ignis</h4>
+            <div class="general-item">
+                <h4>Ember</h4>
+                <p><strong>Especialidad</strong>: Combate cuerpo a cuerpo con fuego, liderazgo carismático y asaltos frontales</p>
+                <p><strong>Personalidad</strong>: Apasionada y carismática, lidera con corazón y fuerza.</p>
+                <p><strong>Estilo de Captura</strong>: Apasionado y ardiente. Las violaciones son intensas y brutales, reflejando su naturaleza de fuego.</p>
+            </div>
+
+            <div class="general-item">
+                <h4>Blaze</h4>
+                <p><strong>Especialidad</strong>: Destrucción masiva, guerra de asedio y magia volcánica</p>
+                <p><strong>Personalidad</strong>: Implacable y destructiva, disfruta del caos y la destrucción en el campo de batalla.</p>
+                <p><strong>Estilo de Captura</strong>: Brutal y destructivo. Las violaciones son extremadamente violentas y degradantes, diseñadas para destruir completamente a la víctima.</p>
+            </div>
+
+            <h4>⚡ Tempestas</h4>
+            <div class="general-item">
+                <h4>Storm</h4>
+                <p><strong>Especialidad</strong>: Guerra de relámpagos, movilidad táctica y control del clima</p>
+                <p><strong>Personalidad</strong>: Dinámica e impredecible como una tormenta, su estado de ánimo cambia rápidamente.</p>
+                <p><strong>Estilo de Captura</strong>: Impredecible y eléctrico. Las violaciones son variadas y sorpresivas, como las tormentas que controla.</p>
+            </div>
+
+            <div class="general-item">
+                <h4>Thunder</h4>
+                <p><strong>Especialidad</strong>: Ataques rápidos, velocidad extrema y combate eléctrico</p>
+                <p><strong>Personalidad</strong>: Rápida en pensamiento y acción, siempre en movimiento.</p>
+                <p><strong>Estilo de Captura</strong>: Rápido y agresivo. Las violaciones son rápidas pero intensas, reflejando su naturaleza eléctrica.</p>
+            </div>
+
+            <h4>🌑 Umbra</h4>
+            <div class="general-item">
+                <h4>Shadow</h4>
+                <p><strong>Especialidad</strong>: Asesinatos, infiltración y guerra de guerrillas nocturna</p>
+                <p><strong>Personalidad</strong>: Silenciosa y letal, rara vez habla pero sus acciones hablan por sí mismas.</p>
+                <p><strong>Estilo de Captura</strong>: Sutil y psicológico. Las violaciones son diseñadas para romper mentalmente, usando miedo y oscuridad.</p>
+            </div>
+
+            <div class="general-item">
+                <h4>Night</h4>
+                <p><strong>Especialidad</strong>: Asesinatos de élite, eliminación de objetivos de alto valor e infiltración en alta sociedad</p>
+                <p><strong>Personalidad</strong>: Letal y sofisticada, opera en los círculos más altos de la sociedad.</p>
+                <p><strong>Estilo de Captura</strong>: Sofisticado y degradante. Las violaciones son elegantes pero humillantes, diseñadas para destruir la dignidad.</p>
+            </div>
+
+            <div class="general-item">
+                <h4>Dark</h4>
+                <p><strong>Especialidad</strong>: Combate espectral, comando de fuerzas de sombra y guerra desde el plano espiritual</p>
+                <p><strong>Personalidad</strong>: Misteriosa y reservada, guarda los secretos más profundos del reino.</p>
+                <p><strong>Estilo de Captura</strong>: Espiritual y corruptor. Las violaciones tienen un elemento sobrenatural, corrompiendo el alma de la víctima.</p>
+            </div>
+
+            <h3>Relaciones y Dinámicas NTR</h3>
+            <div class="info">
+                <p><strong>Relaciones Clave que Afectan el Gameplay NTR:</strong></p>
+                <ul>
+                    <li><strong>Aria y Luna</strong>: Si una es capturada, la otra puede intentar un rescate desesperado, aumentando el riesgo de ambas siendo violadas.</li>
+                    <li><strong>Sakura y Maya</strong>: Su amistad puede llevar a eventos de traición conjunta si ambas tienen amor bajo.</li>
+                    <li><strong>Zara</strong>: Su naturaleza solitaria la hace más vulnerable a la corrupción psicológica cuando es capturada.</li>
+                    <li><strong>Generales Enemigas</strong>: Cada una tiene un estilo único de violación que refleja su personalidad y especialidad, afectando cómo se degrada una general capturada.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 4: PROPUESTAS DE GAMEPLAY -->
+        <section id="propuestas">
+            <h2>💡 Propuestas de Gameplay</h2>
+
+            <div class="gameplay-type">
+                <h4>🎭 4.1 Gameplay con LLM (Narrativa Dinámica)</h4>
+                <p><strong>Descripción</strong>: Uso intensivo de LLM para generar narrativas únicas de captura, violación y conversión en tiempo real.</p>
+                
+                <h5>Mecánicas Propuestas:</h5>
+                <ul>
+                    <li><strong>Escenas de Violación Generadas por LLM</strong>:
+                        <ul>
+                            <li>Cuando una general es capturada, se genera una escena única basada en: la general capturada, el captor, el reino, y el contexto del combate.</li>
+                            <li>El LLM genera descripciones explícitas de la violación, incluyendo detalles físicos, emocionales y psicológicos.</li>
+                            <li>Cada escena es única, nunca se repite exactamente igual.</li>
+                            <li>El rey es informado de la violación, siendo cuckeado al conocer los detalles explícitos.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Diálogos Dinámicos</strong>:
+                        <ul>
+                            <li>Conversaciones generadas entre el rey y las generales traicionadas.</li>
+                            <li>Diálogos entre generales capturadas y sus violadores.</li>
+                            <li>Monólogos internos de generales siendo degradadas.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Eventos Aleatorios Generados por LLM</strong>:
+                        <ul>
+                            <li>Intrigas: General puede ser seducida por un espía enemigo.</li>
+                            <li>Traiciones: General con amor bajo puede traicionar voluntariamente.</li>
+                            <li>Eventos de humillación pública: El rey es forzado a presenciar violaciones.</li>
+                            <li>Eventos de rescate fallido: Intentos de rescate que resultan en más capturas.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Narrativas de Esclavización Progresiva</strong>:
+                        <ul>
+                            <li>Cada turno que una general está esclavizada, se genera una nueva escena de degradación.</li>
+                            <li>Las narrativas muestran la progresión de resistencia a sumisión.</li>
+                            <li>Descripciones de cómo la general va perdiendo su identidad y lealtad.</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <p><strong>Dependencia LLM</strong>: <span class="highlight">Alta</span> - Cada captura, evento y turno de esclavización genera narrativa única mediante LLM.</p>
+                <p><strong>Ventajas</strong>: Narrativa completamente dinámica, nunca se repite, experiencia única en cada partida.</p>
+                <p><strong>Desventajas</strong>: Requiere conexión constante a LLM, puede ser costoso, latencia en la generación.</p>
+            </div>
+
+            <div class="gameplay-type">
+                <h4>⚖️ 4.2 Gameplay Híbrido (LLM + Mecánicas Fijas)</h4>
+                <p><strong>Descripción</strong>: Combinación de narrativas LLM con mecánicas predefinidas para balance entre dinamismo y control.</p>
+                
+                <h5>Mecánicas Propuestas:</h5>
+                <ul>
+                    <li><strong>Sistema de Resistencia</strong>:
+                        <ul>
+                            <li>Nueva estadística: <span class="highlight">Resistencia</span> (0-100) que afecta la velocidad de conversión.</li>
+                            <li>Resistencia alta = conversión más lenta, más escenas de violación necesarias.</li>
+                            <li>Resistencia baja = conversión rápida, general se rinde fácilmente.</li>
+                            <li>La resistencia disminuye con cada violación, pero a ritmos diferentes según la general.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Eventos de Violación con Opciones Predefinidas</strong>:
+                        <ul>
+                            <li>Múltiples "plantillas" de eventos de violación (ej: violación pública, violación privada, violación en grupo).</li>
+                            <li>El LLM genera los detalles específicos, pero la estructura es predefinida.</li>
+                            <li>Diferentes tipos de violación afectan diferentes estadísticas (amor, resistencia, degradación).</li>
+                        </ul>
+                    </li>
+                    <li><strong>Sistema de Humillación</strong>:
+                        <ul>
+                            <li>Estadística de <span class="highlight">Humillación</span> que se acumula cuando generales son violadas.</li>
+                            <li>Afecta el amor y la lealtad de otras generales (ven cómo sus compañeras son degradadas).</li>
+                            <li>Eventos de "humillación pública" donde el rey es forzado a presenciar.</li>
+                            <li>La humillación del rey afecta el prestigio del reino.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Mecánicas de Cuckold Points</strong>:
+                        <ul>
+                            <li>Contador que rastrea cuántas veces el rey ha sido cuckeado.</li>
+                            <li>Cada violación de una general = +1 Cuckold Point.</li>
+                            <li>Los Cuckold Points afectan:
+                                <ul>
+                                    <li>Prestigio del reino (disminuye)</li>
+                                    <li>Moral de las tropas (disminuye)</li>
+                                    <li>Probabilidad de traición de otras generales (aumenta)</li>
+                                    <li>Eventos especiales de humillación pública</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <p><strong>Dependencia LLM</strong>: <span class="highlight">Media</span> - LLM para narrativa y detalles, mecánicas fijas para gameplay.</p>
+                <p><strong>Ventajas</strong>: Balance entre dinamismo y control, más predecible para el jugador, menos dependiente de LLM.</p>
+                <p><strong>Desventajas</strong>: Menos sorpresas, puede volverse repetitivo si no se implementan suficientes variantes.</p>
+            </div>
+
+            <div class="gameplay-type">
+                <h4>🔌 4.3 Gameplay con MCP (Model Context Protocol)</h4>
+                <p><strong>Descripción</strong>: Uso de MCP para integración avanzada con servicios externos especializados.</p>
+                
+                <h5>Mecánicas Propuestas:</h5>
+                <ul>
+                    <li><strong>Generación de Imágenes de Generales Violadas</strong>:
+                        <ul>
+                            <li>Usar MCP para conectar con servicios de generación de imágenes (Stable Diffusion, DALL-E, etc.).</li>
+                            <li>Generar imágenes de generales en estados de degradación progresiva.</li>
+                            <li>Imágenes específicas para cada tipo de violación y nivel de humillación.</li>
+                            <li>El rey puede "ver" las imágenes de sus generales siendo violadas, aumentando el elemento cuckold.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Integración con Bases de Datos de Eventos NTR</strong>:
+                        <ul>
+                            <li>MCP puede acceder a bases de datos predefinidas de eventos NTR.</li>
+                            <li>Eventos categorizados por tipo (violación, humillación, traición, etc.).</li>
+                            <li>El sistema selecciona eventos relevantes basados en el contexto del juego.</li>
+                            <li>Permite tener contenido de alta calidad sin depender completamente del LLM.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Sistema de Memoria Persistente</strong>:
+                        <ul>
+                            <li>MCP storage para guardar historial de violaciones y degradaciones.</li>
+                            <li>El sistema "recuerda" qué generales fueron violadas, cómo, y por quién.</li>
+                            <li>Eventos futuros pueden referenciar violaciones pasadas.</li>
+                            <li>Permite narrativas más coherentes y profundas.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Integración con Servicios de Texto-a-Voz</strong>:
+                        <ul>
+                            <li>MCP puede conectar con servicios TTS para narrar las escenas de violación.</li>
+                            <li>Añade una capa inmersiva adicional al gameplay.</li>
+                            <li>El rey puede "escuchar" las violaciones de sus generales.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Integración con Servicios de Análisis de Sentimiento</strong>:
+                        <ul>
+                            <li>Analizar el estado emocional de las narrativas generadas.</li>
+                            <li>Ajustar mecánicas basadas en la intensidad emocional de las escenas.</li>
+                            <li>Garantizar que las escenas mantengan el tono NTR apropiado.</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <p><strong>Dependencia LLM</strong>: <span class="highlight">Media-Alta</span> - MCP como intermediario para servicios especializados, LLM para narrativa principal.</p>
+                <p><strong>Ventajas</strong>: Acceso a servicios especializados, contenido de alta calidad, funcionalidades avanzadas.</p>
+                <p><strong>Desventajas</strong>: Requiere configuración de MCP, dependencia de múltiples servicios externos.</p>
+            </div>
+
+            <div class="gameplay-type">
+                <h4>🎯 4.4 Gameplay Sin LLM (Mecánicas Puras)</h4>
+                <p><strong>Descripción</strong>: Sistema basado completamente en mecánicas predefinidas sin generación dinámica de narrativa.</p>
+                
+                <h5>Mecánicas Propuestas:</h5>
+                <ul>
+                    <li><strong>Eventos Predefinidos de Violación</strong>:
+                        <ul>
+                            <li>Biblioteca de 50-100 eventos de violación únicos, cada uno con múltiples variantes.</li>
+                            <li>Eventos categorizados por: tipo de violación, reino captor, personalidad de la general.</li>
+                            <li>Sistema de selección basado en contexto (ej: general capturada por Ignis = eventos de fuego/pasión).</li>
+                            <li>Cada evento tiene efectos específicos en estadísticas (amor, resistencia, degradación).</li>
+                        </ul>
+                    </li>
+                    <li><strong>Sistema de Degradación Progresiva con Estados Visuales</strong>:
+                        <ul>
+                            <li>Niveles de degradación: Pristine → Captured → Violated → Broken → Slave</li>
+                            <li>Cada nivel tiene descripción predefinida y efectos en gameplay.</li>
+                            <li>Estados visuales (si hay imágenes): cambios en apariencia, ropa rota, marcas, etc.</li>
+                            <li>Transiciones entre niveles basadas en estadísticas y eventos.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Mecánicas de Traición Basadas en Estadísticas</strong>:
+                        <ul>
+                            <li>Fórmulas predefinidas que determinan cuándo una general traiciona.</li>
+                            <li>Factores: Amor < 20, Cuckold Points del rey > 5, Presencia de generales ya traicionadas.</li>
+                            <li>Eventos de traición predefinidos con múltiples variantes.</li>
+                            <li>Una general traicionada puede intentar convencer a otras a traicionar también.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Sistema de Logros y Eventos Desbloqueables</strong>:
+                        <ul>
+                            <li>Logros: "Primera Violación", "5 Generales Violadas", "Rey Cuckeado 10 Veces", etc.</li>
+                            <li>Eventos especiales desbloqueables: "Orgia Real", "Humillación Pública Masiva", etc.</li>
+                            <li>Contenido adicional desbloqueable basado en acciones del jugador.</li>
+                            <li>Sistema de "rutas" diferentes basadas en decisiones del jugador.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Sistema de "Escalada de Humillación"</strong>:
+                        <ul>
+                            <li>Cada violación es más humillante que la anterior.</li>
+                            <li>El primer Cuckold Point es menos impactante que el décimo.</li>
+                            <li>Eventos especiales se desbloquean cuando se alcanzan ciertos umbrales de humillación.</li>
+                            <li>El rey puede volverse "adicto" a ser cuckeado (mecánica opcional).</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <p><strong>Dependencia LLM</strong>: <span class="highlight">Baja</span> - Solo para narrativa inicial opcional, todo lo demás es predefinido.</p>
+                <p><strong>Ventajas</strong>: No requiere conexión constante, predecible, contenido de alta calidad predefinido.</p>
+                <p><strong>Desventajas</strong>: Puede volverse repetitivo, menos sorpresas, requiere mucho contenido predefinido.</p>
+            </div>
+
+            <div class="info">
+                <p><strong>💡 Recomendación</strong>: Implementar un sistema <strong>híbrido</strong> que combine elementos de todas las propuestas:
+                mecánicas fijas para gameplay core, LLM para narrativa dinámica, y MCP para funcionalidades avanzadas opcionales.
+                Esto permite que el juego funcione sin LLM pero se mejore significativamente con él.</p>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 5: MECÁNICAS EXTRA -->
+        <section id="mecanicas">
+            <h2>⚙️ Mecánicas Extra Propuestas</h2>
+
+            <div class="mechanic-box">
+                <h3>💰 5.1 Sistema de Recursos</h3>
+                
+                <h4>Oro</h4>
+                <ul>
+                    <li><strong>Obtención</strong>: Provincias generan oro por turno, batallas ganadas otorgan botín, provincias conquistadas dan oro inicial.</li>
+                    <li><strong>Uso</strong>:
+                        <ul>
+                            <li>Contratar mercenarios para reforzar ejércitos</li>
+                            <li>Sobornar generales enemigas para traicionar (requiere amor bajo + oro)</li>
+                            <li>Mejorar provincias (fortalezas, defensas)</li>
+                            <li>Intentar rescatar generales capturadas (negociación con oro)</li>
+                            <li>Comprar información sobre planes enemigos</li>
+                        </ul>
+                    </li>
+                    <li><strong>Efecto NTR</strong>: El rey puede intentar "comprar" la liberación de generales, pero esto puede resultar en humillación adicional si falla.</li>
+                </ul>
+
+                <h4>Prestigio</h4>
+                <ul>
+                    <li><strong>Obtención</strong>: Victorias en batalla, conquistas, generales leales, eventos positivos.</li>
+                    <li><strong>Pérdida</strong>: Derrotas, generales capturadas/violadas, eventos de humillación pública.</li>
+                    <li><strong>Uso</strong>:
+                        <ul>
+                            <li>Afecta la lealtad base de las generales (prestigio alto = amor inicial más alto)</li>
+                            <li>Capacidad de diplomacia (prestigio bajo = otros reinos no negocian)</li>
+                            <li>Reclutamiento de nuevas generales (prestigio alto = más opciones)</li>
+                            <li>Moral de las tropas</li>
+                        </ul>
+                    </li>
+                    <li><strong>Efecto NTR</strong>: Cada violación de una general reduce el prestigio, creando un ciclo de degradación.</li>
+                </ul>
+
+                <h4>Influencia</h4>
+                <ul>
+                    <li><strong>Obtención</strong>: Control de provincias estratégicas, espías en reinos enemigos, alianzas.</li>
+                    <li><strong>Uso</strong>:
+                        <ul>
+                            <li>Generar eventos aleatorios favorables</li>
+                            <li>Sabotear planes enemigos</li>
+                            <li>Influir en decisiones de generales enemigas</li>
+                            <li>Desbloquear rutas diplomáticas</li>
+                        </ul>
+                    </li>
+                    <li><strong>Efecto NTR</strong>: Influencia puede usarse para intentar prevenir capturas, pero fallar resulta en mayor humillación.</li>
+                </ul>
+
+                <h4>Corrupción</h4>
+                <ul>
+                    <li><strong>Obtención</strong>: Generales violadas, eventos de humillación, derrotas, decisiones inmorales.</li>
+                    <li><strong>Efectos</strong>:
+                        <ul>
+                            <li>Corrupción alta = moral del reino baja, más probabilidad de traición</li>
+                            <li>Afecta la apariencia visual del reino (si hay gráficos)</li>
+                            <li>Desbloquea eventos especiales de "degradación del reino"</li>
+                            <li>Puede llevar a finales alternativos (rey corrupto, reino caído)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Efecto NTR</strong>: La corrupción es una medida directa de cuánto el rey ha sido cuckeado y degradado.</li>
+                </ul>
+            </div>
+
+            <div class="mechanic-box">
+                <h3>⚔️ 5.2 Sistema de Tropas</h3>
+                
+                <h4>Tipos de Tropas</h4>
+                <ul>
+                    <li><strong>Infantería</strong>: Tropas básicas, baratas, efectivas en defensa.</li>
+                    <li><strong>Caballería</strong>: Rápidas, caras, efectivas en ataques rápidos.</li>
+                    <li><strong>Arqueros</strong>: Rango medio, efectivos contra infantería, vulnerables en combate cuerpo a cuerpo.</li>
+                    <li><strong>Especiales</strong>: 
+                        <ul>
+                            <li><span class="highlight">Violadores</span>: Tropas especiales que aumentan la degradación de generales capturadas</li>
+                            <li>Magos: Soporte mágico en combate</li>
+                            <li>Asesinos: Infiltración y sabotaje</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h4>Mecánicas de Tropas</h4>
+                <ul>
+                    <li><strong>Asignación</strong>: Las generales pueden tener tropas asignadas que las acompañan en combate.</li>
+                    <li><strong>Combate</strong>: Las tropas afectan el resultado de las batallas (bonificadores de daño, defensa, etc.).</li>
+                    <li><strong>Captura</strong>: Si una general es capturada, sus tropas también pueden ser capturadas o dispersadas.</li>
+                    <li><strong>Tropas Violadoras</strong>: 
+                        <ul>
+                            <li>Si una general es capturada y hay tropas violadoras presentes, la degradación aumenta más rápido</li>
+                            <li>Eventos especiales de "violación en grupo" con tropas</li>
+                            <li>El rey es especialmente humillado cuando sus generales son violadas por tropas comunes</li>
+                        </ul>
+                    </li>
+                    <li><strong>Moral</strong>: Las tropas tienen moral que afecta su efectividad. Ver generales violadas reduce la moral.</li>
+                </ul>
+
+                <h4>Efecto NTR</h4>
+                <p>Las tropas pueden ser testigos de las violaciones, aumentando la humillación del rey. Tropas violadoras especiales pueden participar activamente en la degradación de generales capturadas.</p>
+            </div>
+
+            <div class="mechanic-box">
+                <h3>🔞 5.3 Sistema de Eventos NTR</h3>
+                
+                <h4>Eventos de Violación</h4>
+                <ul>
+                    <li><strong>Violación Inicial</strong>: Cuando una general es capturada por primera vez.</li>
+                    <li><strong>Violación Pública</strong>: La general es violada frente a otras generales o tropas, aumentando la humillación del rey.</li>
+                    <li><strong>Violación en Grupo</strong>: Múltiples enemigos violan a la general simultáneamente.</li>
+                    <li><strong>Violación Prolongada</strong>: La general es mantenida en cautiverio y violada repetidamente durante múltiples turnos.</li>
+                    <li><strong>Violación con Humillación del Rey</strong>: El rey es forzado a presenciar la violación directamente.</li>
+                    <li><strong>Violación con Participación de Otras Generales</strong>: Otras generales capturadas son forzadas a participar o presenciar.</li>
+                </ul>
+
+                <h4>Eventos de Traición</h4>
+                <ul>
+                    <li><strong>Traición Voluntaria</strong>: General con amor bajo se une voluntariamente al enemigo.</li>
+                    <li><strong>Traición por Seducción</strong>: General es seducida por un espía enemigo y traiciona.</li>
+                    <li><strong>Traición en Cadena</strong>: Una general traiciona y convence a otras a hacer lo mismo.</li>
+                    <li><strong>Traición con Humillación</strong>: La general traiciona públicamente, humillando al rey frente a todos.</li>
+                </ul>
+
+                <h4>Eventos de Humillación Pública</h4>
+                <ul>
+                    <li><strong>Desfile de Humillación</strong>: Generales capturadas son desfiladas públicamente en estado de degradación.</li>
+                    <li><strong>Juicio Público</strong>: El rey es juzgado públicamente por su incapacidad de proteger a sus generales.</li>
+                    <li><strong>Ceremonia de Cuckold</strong>: Ceremonia especial donde el rey es oficialmente reconocido como cuckold.</li>
+                    <li><strong>Exhibición de Generales Violadas</strong>: Las generales son exhibidas públicamente en su estado degradado.</li>
+                </ul>
+
+                <h4>Eventos de Cuckold</h4>
+                <ul>
+                    <li><strong>Forzado a Presenciar</strong>: El rey es capturado temporalmente y forzado a ver violaciones.</li>
+                    <li><strong>Informado en Detalle</strong>: El rey recibe descripciones explícitas de las violaciones de sus generales.</li>
+                    <li><strong>Forzado a Participar</strong>: El rey es forzado a participar en la humillación de sus generales (evento extremo).</li>
+                    <li><strong>Comparación</strong>: El rey es comparado desfavorablemente con los violadores de sus generales.</li>
+                </ul>
+            </div>
+
+            <div class="mechanic-box">
+                <h3>💕 5.4 Sistema de Relaciones</h3>
+                
+                <h4>Relaciones entre Generales</h4>
+                <ul>
+                    <li><strong>Amistad</strong>: Generales con relaciones positivas (ej: Aria-Luna, Sakura-Maya)
+                        <ul>
+                            <li>Si una es capturada, la otra puede intentar rescate (riesgo alto de ambas ser capturadas)</li>
+                            <li>Ver a una amiga ser violada reduce el amor de la otra</li>
+                            <li>Pueden traicionar juntas si ambas tienen amor bajo</li>
+                        </ul>
+                    </li>
+                    <li><strong>Rivalidad</strong>: Generales con relaciones negativas
+                        <ul>
+                            <li>Pueden traicionar más fácilmente si ven a su rival siendo tratada mejor</li>
+                            <li>Pueden competir por la atención del rey</li>
+                        </ul>
+                    </li>
+                    <li><strong>Mentoría</strong>: Generales veteranas y novatas
+                        <ul>
+                            <li>Si la mentora es violada, la novata puede perder fe en el rey</li>
+                            <li>La novata puede intentar vengar a su mentora (riesgo alto)</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h4>Relación Rey-General</h4>
+                <ul>
+                    <li><strong>Nivel de Confianza</strong>: Afecta la probabilidad de traición
+                        <ul>
+                            <li>Confianza alta = menos probabilidad de traición, más resistencia a la corrupción</li>
+                            <li>Confianza baja = más probabilidad de traición, menos resistencia</li>
+                        </ul>
+                    </li>
+                    <li><strong>Historial de Acciones</strong>: Cómo el rey trata a cada general afecta su relación
+                        <ul>
+                            <li>Proteger a una general = confianza aumenta</li>
+                            <li>Abandonar a una general = confianza disminuye</li>
+                            <li>Intentar rescatar a una capturada = confianza aumenta (aunque falle)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Eventos de Traición Basados en Relación</strong>:
+                        <ul>
+                            <li>General con relación rota puede traicionar voluntariamente</li>
+                            <li>Puede revelar secretos del reino al enemigo</li>
+                            <li>Puede ayudar activamente a violar a otras generales</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h4>Relaciones entre Reinos</h4>
+                <ul>
+                    <li><strong>Diplomacia</strong>: Negociaciones entre reinos
+                        <ul>
+                            <li>Puede negociar intercambios de generales capturadas</li>
+                            <li>Puede formar alianzas temporales</li>
+                            <li>Puede intentar sobornar a generales enemigas</li>
+                        </ul>
+                    </li>
+                    <li><strong>Alianzas</strong>: Acuerdos temporales entre reinos
+                        <ul>
+                            <li>Pueden atacar juntos a un tercer reino</li>
+                            <li>Pueden compartir información</li>
+                            <li>Las alianzas pueden romperse (traición diplomática)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Guerras</strong>: Estados de conflicto activo
+                        <ul>
+                            <li>Aumenta la probabilidad de capturas</li>
+                            <li>Genera más eventos de violación</li>
+                            <li>Aumenta la humillación del rey</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="mechanic-box">
+                <h3>📉 5.5 Sistema de Degradación</h3>
+                
+                <h4>Niveles de Degradación</h4>
+                <ol>
+                    <li><strong>Pristine (Intacta)</strong>: Estado inicial, general leal y pura
+                        <ul>
+                            <li>Amor: 50-100</li>
+                            <li>Resistencia: 100</li>
+                            <li>Apariencia: Normal, armadura completa</li>
+                        </ul>
+                    </li>
+                    <li><strong>Captured (Capturada)</strong>: Recién capturada, primera violación
+                        <ul>
+                            <li>Amor: 40-50</li>
+                            <li>Resistencia: 70-90</li>
+                            <li>Apariencia: Armadura dañada, ropa parcialmente rota, marcas iniciales</li>
+                            <li>Estado mental: Resistente, todavía lucha</li>
+                        </ul>
+                    </li>
+                    <li><strong>Violated (Violada)</strong>: Múltiples violaciones, resistencia disminuyendo
+                        <ul>
+                            <li>Amor: 20-40</li>
+                            <li>Resistencia: 40-70</li>
+                            <li>Apariencia: Ropa significativamente dañada, más marcas, expresión de angustia</li>
+                            <li>Estado mental: Comenzando a dudar, resistencia mental debilitándose</li>
+                        </ul>
+                    </li>
+                    <li><strong>Broken (Rota)</strong>: Casi convertida, resistencia casi inexistente
+                        <ul>
+                            <li>Amor: 5-20</li>
+                            <li>Resistencia: 10-40</li>
+                            <li>Apariencia: Ropa casi destruida, muchas marcas, expresión vacía</li>
+                            <li>Estado mental: Casi derrotada, apenas resiste</li>
+                        </ul>
+                    </li>
+                    <li><strong>Slave (Esclava)</strong>: Completamente convertida, amor = 0
+                        <ul>
+                            <li>Amor: 0</li>
+                            <li>Resistencia: 0</li>
+                            <li>Apariencia: Ropa de esclava, marcas permanentes, expresión sumisa o vacía</li>
+                            <li>Estado mental: Completamente convertida, sirve al nuevo amo</li>
+                            <li><strong>Punto de no retorno</strong>: No puede ser recuperada</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <h4>Estadísticas Afectadas por Degradación</h4>
+                <ul>
+                    <li><strong>Fuerza</strong>: Disminuye con cada nivel de degradación (-2 por nivel)</li>
+                    <li><strong>Amor</strong>: Disminuye progresivamente hasta llegar a 0</li>
+                    <li><strong>Resistencia</strong>: Disminuye más rápido con violaciones más brutales</li>
+                    <li><strong>Lealtad</strong>: Disminuye junto con el amor</li>
+                    <li><strong>Moral</strong>: Afecta a otras generales cuando ven el estado degradado</li>
+                </ul>
+
+                <h4>Estados Visuales (Si se Implementan Gráficos)</h4>
+                <ul>
+                    <li><strong>Pristine</strong>: Armadura completa, expresión confiada, postura orgullosa</li>
+                    <li><strong>Captured</strong>: Armadura dañada, expresión de miedo/ira, postura defensiva</li>
+                    <li><strong>Violated</strong>: Ropa rota, expresión de angustia, postura sumisa</li>
+                    <li><strong>Broken</strong>: Ropa casi destruida, expresión vacía, postura completamente sumisa</li>
+                    <li><strong>Slave</strong>: Ropa de esclava, expresión sumisa o vacía, postura de servidumbre</li>
+                </ul>
+
+                <h4>Efectos en Gameplay</h4>
+                <ul>
+                    <li>Una general degradada no puede realizar acciones normales</li>
+                    <li>Si es recuperada antes de llegar a Slave, puede ser "rehabilitada" pero con estadísticas permanentemente reducidas</li>
+                    <li>Ver generales degradadas afecta el amor de otras generales</li>
+                    <li>El rey acumula más Cuckold Points cuanto más degradada está una general</li>
+                    <li>Eventos especiales se desbloquean en ciertos niveles de degradación</li>
+                </ul>
+            </div>
+
+            <div class="warning">
+                <strong>⚠️ Nota sobre Implementación</strong>: Todas estas mecánicas están diseñadas para trabajar juntas y crear una experiencia 
+                de juego profunda centrada en el tema NTR/cuckold. Se recomienda implementarlas gradualmente, comenzando con las más fundamentales 
+                (recursos básicos, sistema de degradación) y luego añadiendo las más complejas (eventos NTR, relaciones).
+            </div>
+        </section>
+
+        <footer style="text-align: center; padding: 30px; margin-top: 50px; border-top: 2px solid #8b0000;">
+            <p>Documentación de Diseño del Juego - NTR Adventure</p>
+            <p style="color: #888; font-size: 0.9em; margin-top: 10px;">
+                Este documento describe las mecánicas actuales y propuestas para el desarrollo futuro del juego.
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

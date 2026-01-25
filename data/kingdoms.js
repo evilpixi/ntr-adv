@@ -1,76 +1,76 @@
-// Configuración de Reinos
-// Edita este array para definir los reinos del juego
-// Cada reino puede tener una imageUrl opcional para mostrar una imagen
+// Kingdoms Configuration
+// Edit this array to define the game's kingdoms
+// Each kingdom can have an optional imageUrl to display an image
 
 export const kingdoms = [
     {
-        id: 'player',
+        id: 'adeh',
         name: 'Adeh',
-        theme: 'real',
-        description: 'El reino real, centro de poder y equilibrio en el mundo',
+        theme: 'royal',
+        description: 'The royal kingdom, center of power and balance in the world',
         color: '#ffd700',
         owner: 'player',
         provinces: 7,
-        imageUrl: null, // Agrega una URL de imagen aquí si tienes una
-        architecturalStyle: 'Arquitectura clásica imperial con grandes palacios de mármol blanco y dorado, columnas corintias, arcos triunfales y jardines reales. Las estructuras combinan elegancia y poder, con techos abovedados, vitrales coloridos y estatuas monumentales que representan la gloria del reino.',
-        biome: 'Llanuras fértiles y bosques templados con ríos serpenteantes, colinas suaves y valles verdes. El clima es moderado con estaciones bien definidas, ideal para la agricultura y el asentamiento humano.',
-        governmentType: 'Monarquía constitucional con un consejo de nobles y representantes de las provincias. El rey o reina gobierna con el apoyo de un senado que vela por el equilibrio entre las diferentes regiones del reino.',
-        socialDescription: 'Sociedad estructurada en clases pero con movilidad social. Los ciudadanos valoran la justicia, el honor y la lealtad. La educación es accesible y las artes florecen. Existe un fuerte sentido de identidad nacional y orgullo por la tradición real, mientras se mantiene apertura al comercio y la diplomacia con otros reinos.'
+        imageUrl: "../images/kingdoms/adeh.jpg",
+        architecturalStyle: 'Classical imperial architecture with large white and gold marble palaces, Corinthian columns, triumphal arches and royal gardens. Structures combine elegance and power, with vaulted ceilings, colorful stained glass and monumental statues representing the kingdom\'s glory.',
+        biome: 'Fertile plains and temperate forests with winding rivers, gentle hills and green valleys. The climate is moderate with well-defined seasons, ideal for agriculture and human settlement.',
+        governmentType: 'Constitutional monarchy with a council of nobles and provincial representatives. The king or queen rules with the support of a senate that ensures balance between the different regions of the kingdom.',
+        socialDescription: 'Class-structured society but with social mobility. Citizens value justice, honor and loyalty. Education is accessible and the arts flourish. There is a strong sense of national identity and pride in royal tradition, while maintaining openness to trade and diplomacy with other kingdoms.'
     },
     {
-        id: 'kingdom1',
+        id: 'glacia',
         name: 'Glacia',
-        theme: 'hielo',
-        description: 'Reino del hielo eterno, donde los vientos gélidos soplan sin cesar y la nieve nunca se derrite',
+        theme: 'ice',
+        description: 'Kingdom of eternal ice, where freezing winds blow ceaselessly and snow never melts',
         color: '#4a9eff',
         owner: 'ai',
-        provinces: 2,
-        imageUrl: null,
-        architecturalStyle: 'Fortalezas de hielo y cristal talladas directamente en glaciares, con torres puntiagudas que se elevan como estalactitas. Las estructuras están hechas de hielo mágico que nunca se derrite, con puentes de cristal y cúpulas translúcidas que reflejan la luz del sol de manera etérea. Los interiores están decorados con esculturas de hielo y patrones geométricos helados.',
-        biome: 'Tundra ártica y glaciares perpetuos con montañas nevadas, campos de hielo infinitos y lagos congelados. El clima es extremadamente frío, con ventiscas frecuentes y auroras boreales que iluminan las noches polares. La vegetación es escasa, limitada a líquenes y musgos resistentes al frío.',
-        governmentType: 'Teocracia helada gobernada por un Gran Consejo de Ancianos del Hielo. Las decisiones se toman por consenso y se rigen por antiguas tradiciones que honran a los espíritus del invierno. El liderazgo se basa en la sabiduría y la conexión con las fuerzas gélidas.',
-        socialDescription: 'Sociedad resiliente y unida que ha aprendido a prosperar en condiciones extremas. Los habitantes valoran la resistencia, la sabiduría y la paciencia. La comunidad es muy cohesionada, compartiendo recursos y conocimiento para sobrevivir. Existe un profundo respeto por la naturaleza y las tradiciones ancestrales. La magia del hielo es parte integral de su cultura y forma de vida.'
+        provinces: 3,
+        imageUrl: "../images/kingdoms/glacia.jpg",
+        architecturalStyle: 'Ice and crystal fortresses carved directly into glaciers, with pointed towers rising like stalactites. Structures are made of magical ice that never melts, with crystal bridges and translucent domes that reflect sunlight ethereally. Interiors are decorated with ice sculptures and frozen geometric patterns.',
+        biome: 'Arctic tundra and perpetual glaciers with snow-capped mountains, infinite ice fields and frozen lakes. The climate is extremely cold, with frequent blizzards and aurora borealis that illuminate polar nights. Vegetation is scarce, limited to cold-resistant lichens and mosses.',
+        governmentType: 'Frozen theocracy ruled by a Great Council of Ice Elders. Decisions are made by consensus and governed by ancient traditions that honor the winter spirits. Leadership is based on wisdom and connection to the frozen forces.',
+        socialDescription: 'Resilient and united society that has learned to thrive in extreme conditions. Inhabitants value resilience, wisdom and patience. The community is highly cohesive, sharing resources and knowledge to survive. There is deep respect for nature and ancestral traditions. Ice magic is an integral part of their culture and way of life.'
     },
     {
-        id: 'kingdom2',
+        id: 'ignis',
         name: 'Ignis',
-        theme: 'fuego',
-        description: 'Reino volcánico donde la lava fluye como ríos y el fuego es la esencia de la vida',
+        theme: 'fire',
+        description: 'Volcanic kingdom where lava flows like rivers and fire is the essence of life',
         color: '#ff4a4a',
         owner: 'ai',
-        provinces: 2,
-        imageUrl: null,
-        architecturalStyle: 'Ciudades construidas sobre y alrededor de volcanes activos, con estructuras de obsidiana negra y roca volcánica. Los edificios tienen formas orgánicas y fluidas, con techos curvos que imitan el flujo de lava. Las forjas y fundiciones están integradas en la arquitectura, con canales de lava que iluminan las calles. Los templos tienen altares de fuego perpetuo y columnas de magma solidificado.',
-        biome: 'Tierras volcánicas con campos de lava activos, montañas volcánicas humeantes y desiertos de ceniza. El suelo es fértil cerca de los volcanes pero árido en las zonas más alejadas. Geiseres y fumarolas son comunes. El clima es cálido y seco, con cielos teñidos de naranja y rojo por las erupciones constantes.',
-        governmentType: 'Dictadura militar liderada por un Señor del Fuego que gobierna con puño de hierro. El poder se concentra en los guerreros más fuertes y los maestros forjadores. Las decisiones son rápidas y directas, sin lugar para la disidencia. La jerarquía se basa en la fuerza y la capacidad de dominar el fuego.',
-        socialDescription: 'Sociedad agresiva y apasionada que valora la fuerza, el coraje y la determinación. Los habitantes son guerreros natos, orgullosos de su resistencia al calor y su dominio del fuego. La forja y la guerra son las profesiones más respetadas. Existe una cultura de competencia constante y demostración de poder. La lealtad es feroz pero también puede cambiar rápidamente si alguien demuestra ser más fuerte. La vida es intensa y efímera, celebrando cada momento con pasión.'
+        provinces: 3,
+        imageUrl: "../images/kingdoms/ignis.jpg",
+        architecturalStyle: 'Cities built on and around active volcanoes, with black obsidian and volcanic rock structures. Buildings have organic and fluid shapes, with curved roofs that mimic lava flow. Forges and foundries are integrated into the architecture, with lava channels lighting the streets. Temples have perpetual fire altars and solidified magma columns.',
+        biome: 'Volcanic lands with active lava fields, smoking volcanic mountains and ash deserts. The soil is fertile near volcanoes but arid in more distant areas. Geysers and fumaroles are common. The climate is warm and dry, with skies tinged orange and red by constant eruptions.',
+        governmentType: 'Military dictatorship led by a Fire Lord who rules with an iron fist. Power is concentrated in the strongest warriors and master smiths. Decisions are quick and direct, with no room for dissent. The hierarchy is based on strength and the ability to master fire.',
+        socialDescription: 'Aggressive and passionate society that values strength, courage and determination. Inhabitants are natural warriors, proud of their heat resistance and mastery of fire. Forging and war are the most respected professions. There is a culture of constant competition and demonstration of power. Loyalty is fierce but can also change quickly if someone proves stronger. Life is intense and ephemeral, celebrating every moment with passion.'
     },
     {
-        id: 'kingdom3',
+        id: 'tempestas',
         name: 'Tempestas',
-        theme: 'tormenta',
-        description: 'Reino de las tormentas eternas, donde los relámpagos iluminan el cielo y los vientos rugen con furia',
+        theme: 'storm',
+        description: 'Kingdom of eternal storms, where lightning illuminates the sky and winds roar with fury',
         color: '#9b59b6',
         owner: 'ai',
-        provinces: 3,
-        imageUrl: null,
-        architecturalStyle: 'Torres altísimas que se elevan hacia las nubes, construidas para canalizar y resistir las tormentas. Los edificios tienen formas aerodinámicas con techos puntiagudos y pararrayos ornamentales. Las estructuras están hechas de materiales conductores que brillan con energía eléctrica. Los palacios flotantes se mantienen suspendidos mediante campos magnéticos, y las ciudades están conectadas por puentes que cruzan los vientos huracanados.',
-        biome: 'Llanuras azotadas por vientos constantes, montañas escarpadas donde se concentran las tormentas, y cielos perpetuamente nublados. Relámpagos frecuentes iluminan el paisaje, y los vientos pueden alcanzar velocidades destructivas. La vegetación es resistente al viento, con árboles retorcidos y plantas que se aferran al suelo. Lluvias torrenciales son comunes, creando ríos que cambian de curso constantemente.',
-        governmentType: 'República electiva donde los líderes son elegidos por su capacidad de controlar las tormentas y predecir los vientos. Un consejo de maestros de la tempestad gobierna, tomando decisiones rápidas y adaptativas como las propias tormentas. El poder cambia con frecuencia, reflejando la naturaleza impredecible del clima.',
-        socialDescription: 'Sociedad dinámica y adaptable que valora la flexibilidad, la innovación y la capacidad de cambio. Los habitantes son nómadas en espíritu, acostumbrados a adaptarse rápidamente a las condiciones cambiantes. La magia de las tormentas es parte de la vida cotidiana, usada para energía, transporte y comunicación. Existe un respeto profundo por la naturaleza impredecible y poderosa. La sociedad es igualitaria pero competitiva, donde cada uno debe demostrar su valía constantemente. La música y las artes reflejan el caos y la belleza de las tormentas.'
+        provinces: 4,
+        imageUrl: "../images/kingdoms/tempestas.jpg",
+        architecturalStyle: 'Towering towers that rise to the clouds, built to channel and resist storms. Buildings have aerodynamic shapes with pointed roofs and ornamental lightning rods. Structures are made of conductive materials that glow with electrical energy. Floating palaces are suspended by magnetic fields, and cities are connected by bridges that cross hurricane-force winds.',
+        biome: 'Plains battered by constant winds, steep mountains where storms concentrate, and perpetually cloudy skies. Frequent lightning illuminates the landscape, and winds can reach destructive speeds. Vegetation is wind-resistant, with twisted trees and plants that cling to the ground. Torrential rains are common, creating rivers that constantly change course.',
+        governmentType: 'Elective republic where leaders are chosen for their ability to control storms and predict winds. A council of tempest masters governs, making quick and adaptive decisions like the storms themselves. Power changes frequently, reflecting the unpredictable nature of the weather.',
+        socialDescription: 'Dynamic and adaptable society that values flexibility, innovation and the ability to change. Inhabitants are nomads in spirit, accustomed to quickly adapting to changing conditions. Storm magic is part of daily life, used for energy, transportation and communication. There is deep respect for the unpredictable and powerful nature. Society is egalitarian but competitive, where each must constantly prove their worth. Music and arts reflect the chaos and beauty of storms.'
     },
     {
-        id: 'kingdom4',
+        id: 'umbra',
         name: 'Umbra',
-        theme: 'sombra',
-        description: 'Reino de las sombras profundas, donde la oscuridad reina y los secretos se ocultan en la penumbra',
+        theme: 'shadow',
+        description: 'Kingdom of deep shadows, where darkness reigns and secrets hide in twilight',
         color: '#2c3e50',
         owner: 'ai',
-        provinces: 1,
-        imageUrl: null,
-        architecturalStyle: 'Ciudades subterráneas y estructuras que emergen de la oscuridad, construidas con materiales que absorben la luz. Los edificios tienen formas angulares y sombrías, con pasadizos secretos y cámaras ocultas. La arquitectura prioriza el sigilo y la defensa, con muros altos, puertas ocultas y sistemas de vigilancia invisibles. Los palacios están envueltos en sombras mágicas que cambian de forma, y las calles están iluminadas solo por tenues luces que crean más sombras que claridad.',
-        biome: 'Tierras en penumbra perpetua con bosques oscuros de árboles altos que bloquean la luz del sol, cuevas profundas y valles sombríos. El cielo está constantemente nublado, y la niebla espesa envuelve el paisaje. La vegetación es oscura y retorcida, adaptada a la falta de luz. Los ríos fluyen silenciosamente entre las sombras, y los animales son nocturnos y sigilosos.',
-        governmentType: 'Oligarquía secreta gobernada por un consejo de sombras que opera desde las profundidades. El verdadero poder está oculto, y las decisiones se toman en la oscuridad. Existe una red compleja de espías, asesinos y agentes que mantienen el orden. El gobierno es eficiente pero despiadado, eliminando cualquier amenaza antes de que se manifieste.',
-        socialDescription: 'Sociedad cerrada y misteriosa que valora el secreto, la discreción y el conocimiento oculto. Los habitantes son desconfiados pero leales a su círculo íntimo. La información es poder, y el espionaje y la intriga son parte de la cultura. Existe una jerarquía estricta basada en el conocimiento de secretos y la capacidad de mantenerlos. La magia de las sombras es temida y respetada. La sociedad es altamente organizada pero aparentemente caótica desde fuera. Los rituales y tradiciones se realizan en secreto, y la verdadera naturaleza del reino permanece oculta para los forasteros.'
+        provinces: 4,
+        imageUrl: "../images/kingdoms/umbra.jpg",
+        architecturalStyle: 'Underground cities and structures emerging from darkness, built with light-absorbing materials. Buildings have angular and shadowy forms, with secret passages and hidden chambers. Architecture prioritizes stealth and defense, with high walls, hidden doors and invisible surveillance systems. Palaces are wrapped in magical shadows that change shape, and streets are lit only by faint lights that create more shadows than clarity.',
+        biome: 'Lands in perpetual twilight with dark forests of tall trees that block sunlight, deep caves and shadowy valleys. The sky is constantly cloudy, and thick fog envelops the landscape. Vegetation is dark and twisted, adapted to lack of light. Rivers flow silently among shadows, and animals are nocturnal and stealthy.',
+        governmentType: 'Secret oligarchy ruled by a shadow council that operates from the depths. True power is hidden, and decisions are made in darkness. There is a complex network of spies, assassins and agents that maintain order. The government is efficient but ruthless, eliminating any threat before it manifests.',
+        socialDescription: 'Closed and mysterious society that values secrecy, discretion and hidden knowledge. Inhabitants are distrustful but loyal to their inner circle. Information is power, and espionage and intrigue are part of the culture. There is a strict hierarchy based on knowledge of secrets and the ability to keep them. Shadow magic is feared and respected. Society is highly organized but apparently chaotic from outside. Rituals and traditions are performed in secret, and the true nature of the kingdom remains hidden to outsiders.'
     }
 ];

@@ -89,9 +89,12 @@ export function generateKingdomFromTemplate(templateName, kingdomId, kingdomName
     // Generar generales
     const generals = [];
     for (let i = 0; i < numGenerals && i < template.generalNames.length; i++) {
+        const generalName = template.generalNames[i];
+        // Generar ID basado en el nombre (lowercase, sin espacios)
+        const generalId = generalName.toLowerCase().replace(/\s+/g, '');
         generals.push({
-            id: `${kingdomId}_gen${i + 1}`,
-            name: template.generalNames[i],
+            id: generalId,
+            name: generalName,
             kingdom: kingdomId,
             description: `General del reino ${kingdomName}`,
             hp: 100,

@@ -3,6 +3,9 @@
 .env.local
 .env.*.local
 
+# Generated env.js with real API keys (keep template version)
+# js/env.js is versioned with placeholders, but if you generate it locally with real keys, it won't be committed
+
 # Dependencies
 node_modules/
 package-lock.json
