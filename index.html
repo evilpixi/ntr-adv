@@ -7,18 +7,24 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <!-- Title Bar with Action Buttons -->
-    <div class="title-bar">
-        <h1 class="game-title">NTR Adventure</h1>
-        <div class="title-bar-actions">
-            <button id="generateInitialStoryBtn" class="btn btn-primary">Generate Initial Story</button>
-            <button id="nextTurnBtn" class="btn btn-primary">Next Turn</button>
-            <button id="saveGameBtn" class="btn btn-secondary">Save Game</button>
-            <button id="loadGameBtn" class="btn btn-secondary">Load Game</button>
-        </div>
-    </div>
+    <!-- Welcome View (visible by default) -->
+    <div id="welcomeView" class="welcome-view"></div>
 
-    <div class="game-container">
+    <!-- Game Container (hidden by default) -->
+    <div id="gameContainer" class="game-container hidden">
+        <!-- Title Bar with Action Buttons -->
+        <div class="title-bar">
+            <h1 class="game-title">NTR Adventure</h1>
+            <div class="title-bar-actions">
+                <button id="backToWelcomeBtn" class="btn btn-secondary">Volver al Inicio</button>
+                <button id="generateInitialStoryBtn" class="btn btn-primary">Generate Initial Story</button>
+                <button id="nextTurnBtn" class="btn btn-primary">Next Turn</button>
+                <button id="saveGameBtn" class="btn btn-secondary">Save Game</button>
+                <button id="loadGameBtn" class="btn btn-secondary">Load Game</button>
+            </div>
+        </div>
+
+        <div class="game-container-inner">
         <!-- Information Panel -->
         <div class="panel info-panel">
             <div class="info-tabs">
@@ -67,6 +73,7 @@
                     </div>
                 </div>
             </div>
+        </div>
         </div>
     </div>
 
@@ -138,6 +145,9 @@
     <script type="module" src="js/combat.js"></script>
     <script type="module" src="js/ai.js"></script>
     <script type="module" src="js/aiIntegration.js"></script>
+    <script type="module" src="js/apps/index.js"></script>
+    <script type="module" src="js/welcome.js"></script>
     <script type="module" src="js/game.js"></script>
+    <script type="module" src="js/main.js"></script>
 </body>
 </html>

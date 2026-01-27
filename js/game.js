@@ -1,6 +1,4 @@
-import { GameState } from './gameState.js';
-import { processProvinceAttack, processCapitalAction, checkVictoryConditions, processEnslavement } from './combat.js';
-import { makeAIDecisions, decideCaptureType } from './ai.js';
+import { createGameMode } from './gameModes/index.js';
 import { generateStory } from './aiIntegration.js';
 import { createImageElement } from './ui/imageHelper.js';
 import { getGeneralImage, getKingdomImage, getProvinceImage } from './config.js';
@@ -8,7 +6,8 @@ import { gameData } from './dataLoader.js';
 
 class Game {
     constructor() {
-        this.gameState = new GameState();
+        this.gameMode = null; // Will be initialized in initializeGame()
+        this.currentGameModeId = null; // ID del modo de juego actual
         this.playerActions = [];
         this.turnEvents = [];
         this.isProcessing = false;
@@ -17,22 +16,57 @@ class Game {
         this.initializeUI();
     }
 
-    async start() {
+    /**
+     * Inicializa el juego con un modo específico
+     * @param {string} gameModeId - ID del modo de juego a inicializar
+     */
+    async initializeGame(gameModeId = 'classic') {
+        this.currentGameModeId = gameModeId;
+        
         // Load all data at start
         if (!gameData.loaded) {
             await gameData.load();
         }
         
+        // Create game mode
+        this.gameMode = createGameMode(gameModeId, gameData);
+        
         // Try to load saved game
-        if (!this.gameState.loadState()) {
-            // Pass loaded data to GameState
-            this.gameState.initialize(gameData);
+        const saved = localStorage.getItem('ntrAdvGameState');
+        if (saved) {
+            try {
+                const state = JSON.parse(saved);
+                // Only load if the saved game is for the same mode
+                if (state.gameMode === gameModeId && this.gameMode.deserializeState(state)) {
+                    // Successfully loaded saved game
+                } else if (state.gameMode !== gameModeId) {
+                    // Different mode, initialize fresh
+                    this.gameMode.initialize(gameData);
+                } else {
+                    // Same mode but deserialization failed, initialize fresh
+                    this.gameMode.initialize(gameData);
+                }
+            } catch (e) {
+                console.error('Error loading saved game:', e);
+                this.gameMode.initialize(gameData);
+            }
+        } else {
+            // Initialize fresh game
+            this.gameMode.initialize(gameData);
         }
         
         await this.renderAll();
         // Don't generate story automatically - wait for user to press button
         this.setupHotReload();
         this.setupRouting();
+    }
+
+    /**
+     * Método start() mantenido para compatibilidad
+     * @deprecated Use initializeGame() instead
+     */
+    async start() {
+        await this.initializeGame('classic');
     }
     
     setupHotReload() {
@@ -125,7 +159,7 @@ class Game {
         const generalMatch = path.match(/^\/generals\/(.+)$/);
         if (generalMatch) {
             const generalId = generalMatch[1];
-            const general = this.gameState.getGeneral(generalId);
+            const general = this.gameMode.getGeneral(generalId);
             if (general) {
                 // Switch to generals tab if not active
                 this.switchTab('generals');
@@ -142,7 +176,7 @@ class Game {
         const kingdomMatch = path.match(/^\/kingdoms\/(.+)$/);
         if (kingdomMatch) {
             const kingdomId = kingdomMatch[1];
-            const kingdom = this.gameState.getKingdom(kingdomId);
+            const kingdom = this.gameMode.getKingdom(kingdomId);
             if (kingdom) {
                 // Switch to kingdoms tab if not active
                 this.switchTab('kingdoms');
@@ -159,7 +193,7 @@ class Game {
         const provinceMatch = path.match(/^\/province\/(.+)$/);
         if (provinceMatch) {
             const provinceId = provinceMatch[1];
-            const province = this.gameState.getProvince(provinceId);
+            const province = this.gameMode.getProvince(provinceId);
             if (province) {
                 // Switch to provinces tab if not active
                 this.switchTab('provinces');
@@ -188,7 +222,7 @@ class Game {
     }
     
     showKingdomDetail(kingdomId) {
-        const kingdom = this.gameState.getKingdom(kingdomId);
+        const kingdom = this.gameMode.getKingdom(kingdomId);
         if (!kingdom) {
             console.error('Kingdom not found:', kingdomId);
             // Clear route if kingdom doesn't exist
@@ -212,7 +246,7 @@ class Game {
         
         const generalsCount = kingdom.generals.length;
         const provincesCount = kingdom.provinces.length;
-        const availableGenerals = kingdom.getAvailableGenerals().length;
+        const availableGenerals = this.gameMode.getAvailableGenerals(kingdom).length;
         
         // Get kingdom image
         const kingdomImageUrl = getKingdomImage(kingdomId);
@@ -306,7 +340,7 @@ class Game {
     }
     
     showGeneralDetail(generalId) {
-        const general = this.gameState.getGeneral(generalId);
+        const general = this.gameMode.getGeneral(generalId);
         if (!general) {
             console.error('General not found:', generalId);
             // Clear route if general doesn't exist
@@ -342,7 +376,7 @@ class Game {
             statusClass = 'slave';
         }
         
-        const kingdom = this.gameState.getKingdom(general.kingdom);
+        const kingdom = this.gameMode.getKingdom(general.kingdom);
         const isPlayerGeneral = kingdom.owner === 'player';
         
         // Get general image
@@ -353,7 +387,7 @@ class Game {
         const ownerLabel = isPlayerGeneral ? 'Ally' : 'Enemy';
         
         let assignActionButton = '';
-        if (isPlayerGeneral && general.isAvailable()) {
+        if (isPlayerGeneral && this.gameMode.isGeneralAvailable(general)) {
             assignActionButton = `
                 <div class="general-detail-actions">
                     <button class="btn btn-primary" id="assignActionBtn">Assign Action</button>
@@ -491,24 +525,24 @@ class Game {
     }
     
     getGeneralsInProvince(provinceId) {
-        return this.gameState.getGeneralsAtProvince(provinceId);
+        return this.gameMode.getGeneralsAtProvince(provinceId);
     }
     
     isEnemyProvince(provinceId) {
-        const province = this.gameState.getProvince(provinceId);
+        const province = this.gameMode.getProvince(provinceId);
         if (!province) return false;
-        const playerKingdom = this.gameState.getPlayerKingdom();
+        const playerKingdom = this.gameMode.getPlayerKingdom();
         return province.kingdom !== playerKingdom.id;
     }
     
     quickAssignAttack(generalId, provinceId) {
-        const general = this.gameState.getGeneral(generalId);
-        if (!general || !general.isAvailable()) {
+        const general = this.gameMode.getGeneral(generalId);
+        if (!general || !this.gameMode.isGeneralAvailable(general)) {
             alert('This general is not available');
             return;
         }
         
-        const validation = this.gameState.validateAction(generalId, 'attack', provinceId);
+        const validation = this.gameMode.validateAction(generalId, 'attack', provinceId);
         if (!validation.valid) {
             alert(validation.error);
             return;
@@ -528,13 +562,13 @@ class Game {
     }
     
     quickAssignDefend(generalId, provinceId) {
-        const general = this.gameState.getGeneral(generalId);
-        if (!general || !general.isAvailable()) {
+        const general = this.gameMode.getGeneral(generalId);
+        if (!general || !this.gameMode.isGeneralAvailable(general)) {
             alert('This general is not available');
             return;
         }
         
-        const validation = this.gameState.validateAction(generalId, 'defend', provinceId);
+        const validation = this.gameMode.validateAction(generalId, 'defend', provinceId);
         if (!validation.valid) {
             alert(validation.error);
             return;
@@ -554,7 +588,7 @@ class Game {
     }
     
     showProvinceDetail(provinceId) {
-        const province = this.gameState.getProvince(provinceId);
+        const province = this.gameMode.getProvince(provinceId);
         if (!province) {
             console.error('Province not found:', provinceId);
             if (window.location.pathname.startsWith('/province/')) {
@@ -566,7 +600,7 @@ class Game {
         // Actualizar URL con /province/
         window.history.pushState(null, '', `/province/${provinceId}`);
         
-        const kingdom = this.gameState.getKingdom(province.kingdom);
+        const kingdom = this.gameMode.getKingdom(province.kingdom);
         if (!kingdom) {
             console.error('Kingdom not found for province:', provinceId);
             return;
@@ -576,7 +610,7 @@ class Game {
         const content = document.getElementById('provinceDetailContent');
         
         const generalsAtProvince = this.getGeneralsInProvince(provinceId);
-        const playerKingdom = this.gameState.getPlayerKingdom();
+        const playerKingdom = this.gameMode.getPlayerKingdom();
         const isEnemy = this.isEnemyProvince(provinceId);
         const isPlayerProvince = province.kingdom === playerKingdom.id;
         
@@ -607,7 +641,7 @@ class Game {
         
         // Zona de acción rápida
         let quickActionZone = '';
-        const availablePlayerGenerals = playerKingdom.getAvailableGenerals();
+        const availablePlayerGenerals = this.gameMode.getAvailableGenerals(playerKingdom);
         
         if (isEnemy && availablePlayerGenerals.length > 0) {
             quickActionZone = `
@@ -744,7 +778,8 @@ class Game {
         
         this.showLoading('Generating initial story...');
         try {
-            const story = await generateStory(this.gameState, []);
+            const gameState = this.gameMode.getGameState();
+            const story = await generateStory(gameState, []);
             this.addToHistory(story, [], 0);
             // Hide button after generating initial story
             btn.style.display = 'none';
@@ -766,17 +801,12 @@ class Game {
         this.showLoading('Processing turn...');
         
         try {
-            // Process player actions
-            await this.processPlayerActions();
-            
-            // Process AI actions
-            await this.processAIActions();
-            
-            // Process enslavements
-            this.processEnslavements();
+            // Process turn through game mode
+            const result = this.gameMode.processTurn(this.playerActions);
+            this.turnEvents = result.turnEvents;
             
             // Check victory conditions
-            const victoryCheck = checkVictoryConditions(this.gameState);
+            const victoryCheck = this.gameMode.checkVictoryConditions();
             if (victoryCheck.gameOver) {
                 this.endGame(victoryCheck);
                 return;
@@ -784,14 +814,15 @@ class Game {
             
             // Generate new story
             this.showLoading('Generating story...');
-            const story = await generateStory(this.gameState, this.turnEvents);
-            const dayNumber = this.gameState.turn + 1;
+            const gameState = this.gameMode.getGameState();
+            const story = await generateStory(gameState, this.turnEvents);
+            const dayNumber = gameState.turn + 1;
             this.addToHistory(story, this.turnEvents, dayNumber);
             
             // Clear actions and events
             this.playerActions = [];
             this.turnEvents = [];
-            this.gameState.turn++;
+            gameState.turn++;
             
             // Update UI
             await this.renderAll();
@@ -805,110 +836,10 @@ class Game {
         }
     }
 
-    async processPlayerActions() {
-        const playerKingdom = this.gameState.getPlayerKingdom();
-        
-        for (const action of this.playerActions) {
-            const general = this.gameState.getGeneral(action.generalId);
-            if (!general || !general.isAvailable()) continue;
-            
-            if (action.actionType === 'attack' || action.actionType === 'defend') {
-                const province = this.gameState.getProvince(action.targetId);
-                if (!province) continue;
-                
-                // Buscar defensora si es ataque
-                let defender = null;
-                if (action.actionType === 'attack') {
-                    defender = this.findDefender(province);
-                }
-                
-                const result = processProvinceAttack(general, province, defender);
-                this.turnEvents.push(...result.events);
-                
-                general.location = province.id;
-            } else if (['rest', 'date', 'train'].includes(action.actionType)) {
-                const result = processCapitalAction(general, action.actionType);
-                this.turnEvents.push(...result.events);
-                general.location = 'capital';
-            }
-        }
-    }
-
-    async processAIActions() {
-        const aiKingdoms = this.gameState.getAIKingdoms();
-        
-        for (const kingdom of aiKingdoms) {
-            const actions = makeAIDecisions(this.gameState, kingdom.id);
-            
-            for (const action of actions) {
-                const general = this.gameState.getGeneral(action.generalId);
-                if (!general || !general.isAvailable()) continue;
-                
-                if (action.actionType === 'attack' || action.actionType === 'defend') {
-                    const province = this.gameState.getProvince(action.targetId);
-                    if (!province) continue;
-                    
-                    let defender = null;
-                    if (action.actionType === 'attack') {
-                        defender = this.findDefender(province);
-                    }
-                    
-                    const result = processProvinceAttack(general, province, defender);
-                    this.turnEvents.push(...result.events);
-                    
-                    general.location = province.id;
-                } else if (['rest', 'date', 'train'].includes(action.actionType)) {
-                    const result = processCapitalAction(general, action.actionType);
-                    this.turnEvents.push(...result.events);
-                    general.location = 'capital';
-                }
-            }
-            
-            // Procesar capturas de la IA
-            this.processAICaptures(kingdom);
-        }
-    }
-
-    processAICaptures(kingdom) {
-        const capturedGenerals = kingdom.generals.filter(g => g.status === 'captured' && g.captor === kingdom.id);
-        
-        for (const general of capturedGenerals) {
-            const decision = decideCaptureType(general, kingdom.id);
-            if (decision === 'enslavement' && general.captureType !== 'enslavement') {
-                processEnslavement(general, kingdom.id);
-            }
-        }
-    }
-
-    processEnslavements() {
-        const allGenerals = this.gameState.getAllGenerals();
-        const enslavedGenerals = allGenerals.filter(g => g.captureType === 'enslavement');
-        
-        for (const general of enslavedGenerals) {
-            const result = general.decreaseLove(10);
-            if (result.converted) {
-                this.turnEvents.push({
-                    type: 'enslavement_conversion',
-                    general: general.id,
-                    oldKingdom: result.oldKingdom,
-                    newKingdom: result.newKingdom
-                });
-            }
-        }
-    }
-
-    findDefender(province) {
-        const allGenerals = this.gameState.getAllGenerals();
-        return allGenerals.find(g => 
-            g.location === province.id && 
-            g.kingdom === province.kingdom &&
-            g.isAvailable()
-        );
-    }
-
     endGame(result) {
-        this.gameState.gameOver = true;
-        this.gameState.winner = result.winner;
+        const gameState = this.gameMode.getGameState();
+        gameState.gameOver = true;
+        gameState.winner = result.winner;
         
         let message = result.message || 'The game has ended.';
         if (result.winner === 'player') {
@@ -932,7 +863,8 @@ class Game {
         const container = document.getElementById('kingdomsList');
         container.innerHTML = '';
         
-        for (const kingdom of this.gameState.kingdoms.values()) {
+        const gameState = this.gameMode.getGameState();
+        for (const kingdom of gameState.kingdoms.values()) {
             // Obtener datos del reino desde gameData para acceder a theme, description, color
             const kingdomData = gameData.getKingdomById(kingdom.id);
             
@@ -942,7 +874,7 @@ class Game {
             
             const generalsCount = kingdom.generals.length;
             const provincesCount = kingdom.provinces.length;
-            const availableGenerals = kingdom.getAvailableGenerals().length;
+            const availableGenerals = this.gameMode.getAvailableGenerals(kingdom).length;
             
             // Obtener imagen del reino
             const kingdomImageUrl = getKingdomImage(kingdom.id);
@@ -969,7 +901,7 @@ class Game {
             // Crear lista de provincias
             let provincesList = '';
             kingdom.provinces.forEach(province => {
-                const generalsAtProvince = this.gameState.getGeneralsAtProvince(province.id);
+                const generalsAtProvince = this.gameMode.getGeneralsAtProvince(province.id);
                 const hasGenerals = generalsAtProvince.length > 0;
                 provincesList += `
                     <div class="kingdom-province-item ${hasGenerals ? 'has-generals' : ''}" data-province-id="${province.id}">
@@ -1031,8 +963,8 @@ class Game {
         playerContainer.innerHTML = '';
         enemyContainer.innerHTML = '';
         
-        const playerKingdom = this.gameState.getPlayerKingdom();
-        const aiKingdoms = this.gameState.getAIKingdoms();
+        const playerKingdom = this.gameMode.getPlayerKingdom();
+        const aiKingdoms = this.gameMode.getAIKingdoms();
         
         // Player generals
         playerKingdom.generals.forEach(general => {
@@ -1120,9 +1052,10 @@ class Game {
         const container = document.getElementById('provincesMap');
         container.innerHTML = '';
         
+        const gameState = this.gameMode.getGameState();
         // Agrupar provincias por reino
         const provincesByKingdom = new Map();
-        for (const kingdom of this.gameState.kingdoms.values()) {
+        for (const kingdom of gameState.kingdoms.values()) {
             provincesByKingdom.set(kingdom.id, {
                 kingdom: kingdom,
                 provinces: []
@@ -1130,7 +1063,7 @@ class Game {
         }
         
         // Agregar provincias a sus reinos correspondientes
-        for (const kingdom of this.gameState.kingdoms.values()) {
+        for (const kingdom of gameState.kingdoms.values()) {
             kingdom.provinces.forEach((province, index) => {
                 provincesByKingdom.get(kingdom.id).provinces.push({ province, index });
             });
@@ -1163,7 +1096,7 @@ class Game {
                 ).join('');
                 
                 // Obtener generales en esta provincia
-                const generalsAtProvince = this.gameState.getGeneralsAtProvince(province.id);
+                const generalsAtProvince = this.gameMode.getGeneralsAtProvince(province.id);
                 
                 // Crear miniaturas de generales
                 let generalsMiniatures = '';
@@ -1233,7 +1166,7 @@ class Game {
         }
         
         this.playerActions.forEach((action, index) => {
-            const general = this.gameState.getGeneral(action.generalId);
+            const general = this.gameMode.getGeneral(action.generalId);
             if (!general) return;
             
             const item = document.createElement('div');
@@ -1241,7 +1174,7 @@ class Game {
             
             let targetName = 'Capital';
             if (action.targetId) {
-                const province = this.gameState.getProvince(action.targetId);
+                const province = this.gameMode.getProvince(action.targetId);
                 if (province) targetName = province.name;
             }
             
@@ -1266,7 +1199,7 @@ class Game {
     }
 
     selectGeneral(general) {
-        if (!general.isAvailable()) {
+        if (!this.gameMode.isGeneralAvailable(general)) {
             alert('This general is not available');
             return;
         }
@@ -1282,9 +1215,9 @@ class Game {
         
         modalTitle.textContent = `Assign Action - ${general.name}`;
         
-        const kingdom = this.gameState.getKingdom(general.kingdom);
-        const capital = kingdom.getCapital();
-        const allProvinces = this.gameState.getAllProvinces();
+        const kingdom = this.gameMode.getKingdom(general.kingdom);
+        const capital = this.gameMode.getCapital(kingdom);
+        const allProvinces = this.gameMode.getAllProvinces();
         const ownProvinces = kingdom.provinces;
         const enemyProvinces = allProvinces.filter(p => p.kingdom !== general.kingdom);
         
@@ -1357,14 +1290,14 @@ class Game {
             }
         } else {
             // For capital actions, use null
-            const kingdom = this.gameState.getKingdom(general.kingdom);
-            const capital = kingdom.getCapital();
+            const kingdom = this.gameMode.getKingdom(general.kingdom);
+            const capital = this.gameMode.getCapital(kingdom);
             if (capital) {
                 targetId = capital.id;
             }
         }
         
-        const validation = this.gameState.validateAction(general.id, actionType, targetId);
+        const validation = this.gameMode.validateAction(general.id, actionType, targetId);
         if (!validation.valid) {
             alert(validation.error);
             return;
@@ -1466,10 +1399,10 @@ class Game {
         for (const event of events) {
             switch (event.type) {
                 case 'combat':
-                    const attacker = this.gameState.getGeneral(event.attacker);
-                    const defender = this.gameState.getGeneral(event.defender);
-                    const winner = this.gameState.getGeneral(event.winner);
-                    const loser = this.gameState.getGeneral(event.loser);
+                    const attacker = this.gameMode.getGeneral(event.attacker);
+                    const defender = this.gameMode.getGeneral(event.defender);
+                    const winner = this.gameMode.getGeneral(event.winner);
+                    const loser = this.gameMode.getGeneral(event.loser);
                     battles.push({
                         attacker: attacker ? attacker.name : event.attacker,
                         defender: defender ? defender.name : event.defender,
@@ -1480,7 +1413,7 @@ class Game {
                     break;
                     
                 case 'province_damage':
-                    const province = this.gameState.getProvince(event.province);
+                    const province = this.gameMode.getProvince(event.province);
                     if (province) {
                         provinceChanges.push({
                             name: province.name,
@@ -1493,8 +1426,8 @@ class Game {
                     break;
                     
                 case 'province_conquered':
-                    const conqueredProvince = this.gameState.getProvince(event.province);
-                    const newOwner = this.gameState.getKingdom(event.newOwner);
+                    const conqueredProvince = this.gameMode.getProvince(event.province);
+                    const newOwner = this.gameMode.getKingdom(event.newOwner);
                     if (conqueredProvince) {
                         provinceChanges.push({
                             name: conqueredProvince.name,
@@ -1507,8 +1440,8 @@ class Game {
                     break;
                     
                 case 'capture':
-                    const capturedGeneral = this.gameState.getGeneral(event.general);
-                    const captorGeneral = this.gameState.getGeneral(event.captor);
+                    const capturedGeneral = this.gameMode.getGeneral(event.general);
+                    const captorGeneral = this.gameMode.getGeneral(event.captor);
                     if (capturedGeneral) {
                         captures.push({
                             general: capturedGeneral.name,
@@ -1518,9 +1451,9 @@ class Game {
                     break;
                     
                 case 'enslavement_conversion':
-                    const convertedGeneral = this.gameState.getGeneral(event.general);
-                    const oldKingdom = this.gameState.getKingdom(event.oldKingdom);
-                    const newKingdom = this.gameState.getKingdom(event.newKingdom);
+                    const convertedGeneral = this.gameMode.getGeneral(event.general);
+                    const oldKingdom = this.gameMode.getKingdom(event.oldKingdom);
+                    const newKingdom = this.gameMode.getKingdom(event.newKingdom);
                     if (convertedGeneral) {
                         conversions.push({
                             general: convertedGeneral.name,
@@ -1531,7 +1464,7 @@ class Game {
                     break;
                     
                 case 'rest':
-                    const restedGeneral = this.gameState.getGeneral(event.general);
+                    const restedGeneral = this.gameMode.getGeneral(event.general);
                     if (restedGeneral) {
                         generalChanges.push({
                             general: restedGeneral.name,
@@ -1543,7 +1476,7 @@ class Game {
                     break;
                     
                 case 'date':
-                    const datedGeneral = this.gameState.getGeneral(event.general);
+                    const datedGeneral = this.gameMode.getGeneral(event.general);
                     if (datedGeneral) {
                         generalChanges.push({
                             general: datedGeneral.name,
@@ -1555,7 +1488,7 @@ class Game {
                     break;
                     
                 case 'train':
-                    const trainedGeneral = this.gameState.getGeneral(event.general);
+                    const trainedGeneral = this.gameMode.getGeneral(event.general);
                     if (trainedGeneral) {
                         generalChanges.push({
                             general: trainedGeneral.name,
@@ -1631,17 +1564,17 @@ class Game {
         summary.push('');
         
         summary.push('Provinces:');
-        const allProvinces = this.gameState.getAllProvinces();
+        const allProvinces = this.gameMode.getAllProvinces();
         allProvinces.forEach(province => {
-            const kingdom = this.gameState.getKingdom(province.kingdom);
+            const kingdom = this.gameMode.getKingdom(province.kingdom);
             summary.push(`  - ${province.name}: HP ${province.hp}/${province.maxHp}, Owner: ${kingdom ? kingdom.name : province.kingdom}${province.isCapital ? ' (Capital)' : ''}`);
         });
         summary.push('');
         
         summary.push('Generals:');
-        const allGenerals = this.gameState.getAllGenerals();
+        const allGenerals = this.gameMode.getAllGenerals();
         allGenerals.forEach(general => {
-            const kingdom = this.gameState.getKingdom(general.kingdom);
+            const kingdom = this.gameMode.getKingdom(general.kingdom);
             let statusText = 'Free';
             if (general.status === 'captured') statusText = 'Captured';
             if (general.status === 'slave') statusText = 'Slave';
@@ -1652,26 +1585,36 @@ class Game {
     }
 
     saveGame() {
-        this.gameState.saveState();
+        const state = this.gameMode.serializeState();
+        // Add gameMode to saved state
+        state.gameMode = this.currentGameModeId;
+        localStorage.setItem('ntrAdvGameState', JSON.stringify(state));
         alert('Game saved');
     }
 
     loadGame() {
-        if (this.gameState.loadState()) {
-            this.renderAll();
-            alert('Game loaded');
+        const saved = localStorage.getItem('ntrAdvGameState');
+        if (saved) {
+            try {
+                const state = JSON.parse(saved);
+                if (this.gameMode.deserializeState(state)) {
+                    this.renderAll();
+                    alert('Game loaded');
+                } else {
+                    alert('Error loading saved game');
+                }
+            } catch (e) {
+                console.error('Error loading game:', e);
+                alert('Error loading saved game');
+            }
         } else {
             alert('No saved game found');
         }
     }
 }
 
-// Initialize game when DOM is ready
-let game;
-document.addEventListener('DOMContentLoaded', async () => {
-    game = new Game();
-    await game.start();
-    
-    // Make game available globally for event handlers
-    window.game = game;
-});
+// Game instance will be created when an app is selected
+// The initialization is handled by welcome.js
+
+// Export Game class for dynamic imports
+export { Game };

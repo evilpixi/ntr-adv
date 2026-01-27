@@ -18,7 +18,12 @@ export function makeAIDecisions(gameState, kingdomId) {
         return [];
     }
     
-    const availableGenerals = kingdom.getAvailableGenerals();
+    // Helper to check if general is available
+    const isGeneralAvailable = (general) => {
+        return general.status === 'free' && general.hp > 0;
+    };
+    
+    const availableGenerals = kingdom.generals.filter(g => isGeneralAvailable(g));
     if (availableGenerals.length === 0) {
         return [];
     }
