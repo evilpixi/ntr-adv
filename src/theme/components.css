@@ -95,3 +95,17 @@
   letter-spacing: 0.02em;
   margin: 0 0 var(--space-md);
 }
+
+/* Iconos (Game Icons / react-icons) — heredan color y tamaño */
+.icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: currentColor;
+  vertical-align: middle;
+}
+.icon-sm { font-size: var(--font-size-sm); }
+.icon-md { font-size: var(--font-size-base); }
+.icon-lg { font-size: var(--font-size-xl); }
+.icon-xl { font-size: var(--font-size-2xl); }
+.icon-amber { color: var(--color-amber); }
+.icon-accent { color: var(--color-accent); }

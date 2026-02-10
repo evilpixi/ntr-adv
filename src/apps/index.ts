@@ -1,6 +1,6 @@
 import { registerApp } from './registry'
 import TemplateApp from './_template/App'
-import BlankApp from './blank/App'
+import NarratedStoryApp from './narratedStory/App'
 import ClassicApp from './classic/App'
 import DataLibraryApp from './dataLibrary/App'
 
@@ -21,7 +21,7 @@ registerApp({
     description: 'App vacía lista para programar, con el estilo de la aplicación',
     type: 'app',
   },
-  Component: BlankApp,
+  Component: NarratedStoryApp,
 })
 
 registerApp({

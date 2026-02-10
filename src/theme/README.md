@@ -18,3 +18,9 @@ Estilo medieval minimalista, azules oscuros. Para mantener consistencia en todo 
 3. **Nuevos componentes**: definir estilos en su propio `.css` importando solo lo necesario; usar las variables del tema en lugar de colores o tamaños fijos.
 
 4. **Cambiar el tema**: editar `tokens.css`; el resto del proyecto se adapta.
+
+5. **Iconos (medieval / fantasía)**: librería Game Icons (react-icons/gi), disponible en todo el proyecto:
+   ```ts
+   import { GiSword, GiDragonHead, GiScrollQuill, GiCastle } from '@/theme/icons'
+   ```
+   Catálogo: https://react-icons.github.io/react-icons/icons/gi/
