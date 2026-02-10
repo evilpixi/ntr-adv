@@ -1,0 +1,27 @@
+@import "./theme/tokens.css";
+@import "./theme/components.css";
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  color: var(--color-text);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Escala de UI global (desde settings) */
+html[data-ui-scale="90"] { font-size: 90%; }
+html[data-ui-scale="100"] { font-size: 100%; }
+html[data-ui-scale="110"] { font-size: 110%; }
+html[data-ui-scale="125"] { font-size: 125%; }

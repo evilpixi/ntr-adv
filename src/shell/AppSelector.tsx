@@ -1,0 +1,37 @@
+import { getAvailableApps } from '../apps'
+import { useApp } from '../store/AppContext'
+import { t } from '../i18n'
+import './Shell.css'
+
+export function AppSelector() {
+  const { setCurrentAppId, settings } = useApp()
+  const apps = getAvailableApps().filter((a) => a.manifest.id !== '_template')
+  const lang = settings.language
+
+  return (
+    <div className="app-selector-page">
+      <h2 className="section-title">{t('appSelector.title', lang)}</h2>
+      <div className="apps-grid">
+        {apps.map(({ manifest }) => (
+          <button
+            key={manifest.id}
+            type="button"
+            className="btn app-card"
+            onClick={() => setCurrentAppId(manifest.id)}
+          >
+            <p className="app-card-name">{manifest.name}</p>
+            <p className="app-card-desc">{manifest.description}</p>
+            <span className="app-card-badges">
+              {manifest.legacy ? (
+                <span className="app-card-badge app-card-badge-legacy">{t('app.legacy', lang)}</span>
+              ) : null}
+              <span className="app-card-badge">
+                {manifest.type === 'game-mode' ? t('app.typeGame', lang) : t('app.typeApp', lang)}
+              </span>
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}

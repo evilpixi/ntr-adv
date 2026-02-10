@@ -5,14 +5,22 @@ import { getGeneralImage, getKingdomImage, getProvinceImage } from './config.js'
 import { gameData } from './dataLoader.js';
 
 class Game {
-    constructor() {
+    /**
+     * @param {Object} [options]
+     * @param {HTMLElement} [options.rootElement] - Root DOM element containing the game UI (title bar, tabs, modals). When provided, all getElementById/querySelector are scoped to this root. Omit for legacy full-document behavior.
+     */
+    constructor(options = {}) {
+        this.root = options.rootElement ?? document.body;
         this.gameMode = null; // Will be initialized in initializeGame()
         this.currentGameModeId = null; // ID del modo de juego actual
         this.playerActions = [];
         this.turnEvents = [];
         this.isProcessing = false;
         this.selectedGeneral = null;
-        
+
+        this.getEl = (id) => this.root.querySelector?.('#' + id) ?? document.getElementById?.(id);
+        this.getAll = (sel) => this.root.querySelectorAll?.(sel) ?? document.querySelectorAll?.(sel) ?? [];
+
         this.initializeUI();
     }
 
@@ -94,7 +102,7 @@ class Game {
 
     initializeUI() {
         // Tabs
-        document.querySelectorAll('.tab-btn').forEach(btn => {
+        this.getAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const tab = e.target.dataset.tab;
                 this.switchTab(tab);
@@ -102,13 +110,13 @@ class Game {
         });
 
         // Botones
-        document.getElementById('generateInitialStoryBtn').addEventListener('click', () => this.generateInitialStory());
-        document.getElementById('nextTurnBtn').addEventListener('click', () => this.nextTurn());
-        document.getElementById('saveGameBtn').addEventListener('click', () => this.saveGame());
-        document.getElementById('loadGameBtn').addEventListener('click', () => this.loadGame());
+        this.getEl('generateInitialStoryBtn')?.addEventListener('click', () => this.generateInitialStory());
+        this.getEl('nextTurnBtn')?.addEventListener('click', () => this.nextTurn());
+        this.getEl('saveGameBtn')?.addEventListener('click', () => this.saveGame());
+        this.getEl('loadGameBtn')?.addEventListener('click', () => this.loadGame());
 
         // Modal
-        document.querySelectorAll('.close-modal').forEach(closeBtn => {
+        this.getAll('.close-modal').forEach(closeBtn => {
             closeBtn.addEventListener('click', (e) => {
                 const modal = e.target.closest('.modal');
                 if (modal) {
@@ -125,11 +133,11 @@ class Game {
             });
         });
         
-        window.addEventListener('click', (e) => {
-            const actionModal = document.getElementById('actionModal');
-            const kingdomModal = document.getElementById('kingdomDetailModal');
-            const generalModal = document.getElementById('generalDetailModal');
-            const provinceModal = document.getElementById('provinceDetailModal');
+        this._boundWindowClick = (e) => {
+            const actionModal = this.getEl('actionModal');
+            const kingdomModal = this.getEl('kingdomDetailModal');
+            const generalModal = this.getEl('generalDetailModal');
+            const provinceModal = this.getEl('provinceDetailModal');
             if (e.target === actionModal) {
                 this.closeModal();
             } else if (e.target === kingdomModal) {
@@ -139,17 +147,31 @@ class Game {
             } else if (e.target === provinceModal) {
                 this.closeProvinceModal();
             }
-        });
+        };
+        window.addEventListener('click', this._boundWindowClick);
     }
     
     setupRouting() {
         // Handle route changes
-        window.addEventListener('popstate', () => {
-            this.handleRouteChange();
-        });
+        this._boundPopState = () => this.handleRouteChange();
+        window.addEventListener('popstate', this._boundPopState);
         
         // Handle initial route
         this.handleRouteChange();
+    }
+
+    /**
+     * Remove window listeners. Call when unmounting the game (e.g. when leaving Classic app in React shell).
+     */
+    destroy() {
+        if (this._boundWindowClick) {
+            window.removeEventListener('click', this._boundWindowClick);
+            this._boundWindowClick = null;
+        }
+        if (this._boundPopState) {
+            window.removeEventListener('popstate', this._boundPopState);
+            this._boundPopState = null;
+        }
     }
     
     handleRouteChange() {
@@ -207,9 +229,9 @@ class Game {
         }
         
         // If no valid route, close modals if open
-        const kingdomModal = document.getElementById('kingdomDetailModal');
-        const generalModal = document.getElementById('generalDetailModal');
-        const provinceModal = document.getElementById('provinceDetailModal');
+        const kingdomModal = this.getEl('kingdomDetailModal');
+        const generalModal = this.getEl('generalDetailModal');
+        const provinceModal = this.getEl('provinceDetailModal');
         if (kingdomModal && kingdomModal.classList.contains('active')) {
             this.closeKingdomModal();
         }
@@ -241,8 +263,8 @@ class Game {
             return;
         }
         
-        const modal = document.getElementById('kingdomDetailModal');
-        const content = document.getElementById('kingdomDetailContent');
+        const modal = this.getEl('kingdomDetailModal');
+        const content = this.getEl('kingdomDetailContent');
         
         const generalsCount = kingdom.generals.length;
         const provincesCount = kingdom.provinces.length;
@@ -318,20 +340,20 @@ class Game {
         `;
         
         // Agregar imagen después de crear el contenido
-        const imageContainer = document.getElementById('kingdomDetailImageContainer');
+        const imageContainer = this.getEl('kingdomDetailImageContainer');
         const imageElement = createImageElement(
             kingdomImageUrl,
             kingdom.name,
             'kingdom-detail-image',
             { placeholderText: kingdom.name }
         );
-        imageContainer.appendChild(imageElement);
+        imageContainer?.appendChild(imageElement);
         
         modal.classList.add('active');
     }
     
     closeKingdomModal() {
-        const modal = document.getElementById('kingdomDetailModal');
+        const modal = this.getEl('kingdomDetailModal');
         modal.classList.remove('active');
         // Clear route if modal is closed
         if (window.location.pathname.startsWith('/kingdoms/')) {
@@ -359,8 +381,8 @@ class Game {
             return;
         }
         
-        const modal = document.getElementById('generalDetailModal');
-        const content = document.getElementById('generalDetailContent');
+        const modal = this.getEl('generalDetailModal');
+        const content = this.getEl('generalDetailContent');
         
         const hpPercent = (general.hp / general.maxHp) * 100;
         const lovePercent = general.love;
@@ -494,18 +516,18 @@ class Game {
         `;
         
         // Add image after creating content
-        const imageContainer = document.getElementById('generalDetailImageContainer');
+        const imageContainer = this.getEl('generalDetailImageContainer');
         const imageElement = createImageElement(
             generalImageUrl,
             general.name,
             'general-detail-image',
             { placeholderText: general.name }
         );
-        imageContainer.appendChild(imageElement);
+        imageContainer?.appendChild(imageElement);
         
         // Add event listener for assign action button
         if (assignActionButton) {
-            const assignBtn = document.getElementById('assignActionBtn');
+            const assignBtn = this.getEl('assignActionBtn');
             assignBtn.addEventListener('click', () => {
                 this.closeGeneralModal();
                 this.selectGeneral(general);
@@ -516,7 +538,7 @@ class Game {
     }
     
     closeGeneralModal() {
-        const modal = document.getElementById('generalDetailModal');
+        const modal = this.getEl('generalDetailModal');
         modal.classList.remove('active');
         // Clear route if modal is closed
         if (window.location.pathname.startsWith('/generals/')) {
@@ -606,8 +628,8 @@ class Game {
             return;
         }
         
-        const modal = document.getElementById('provinceDetailModal');
-        const content = document.getElementById('provinceDetailContent');
+        const modal = this.getEl('provinceDetailModal');
+        const content = this.getEl('provinceDetailContent');
         
         const generalsAtProvince = this.getGeneralsInProvince(provinceId);
         const playerKingdom = this.gameMode.getPlayerKingdom();
@@ -722,14 +744,14 @@ class Game {
         `;
         
         // Agregar imagen después de crear el contenido
-        const imageContainer = document.getElementById('provinceDetailImageContainer');
+        const imageContainer = this.getEl('provinceDetailImageContainer');
         const imageElement = createImageElement(
             provinceImageUrl,
             province.name,
             'province-detail-image',
             { placeholderText: province.name }
         );
-        imageContainer.appendChild(imageElement);
+        imageContainer?.appendChild(imageElement);
         
         // Agregar event listeners para botones de acción rápida
         if (quickActionZone) {
@@ -750,7 +772,7 @@ class Game {
     }
     
     closeProvinceModal() {
-        const modal = document.getElementById('provinceDetailModal');
+        const modal = this.getEl('provinceDetailModal');
         modal.classList.remove('active');
         // Clear route if modal is closed
         if (window.location.pathname.startsWith('/province/')) {
@@ -760,18 +782,18 @@ class Game {
 
     switchTab(tabName) {
         // Update buttons
-        document.querySelectorAll('.tab-btn').forEach(btn => {
+        this.getAll('.tab-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.tab === tabName);
         });
 
         // Update content
-        document.querySelectorAll('.tab-content').forEach(content => {
+        this.getAll('.tab-content').forEach(content => {
             content.classList.toggle('active', content.id === `tab-${tabName}`);
         });
     }
 
     async generateInitialStory() {
-        const btn = document.getElementById('generateInitialStoryBtn');
+        const btn = this.getEl('generateInitialStoryBtn');
         const originalText = btn.textContent;
         btn.disabled = true;
         btn.textContent = 'Generando...';
@@ -860,7 +882,7 @@ class Game {
     }
 
     renderKingdoms() {
-        const container = document.getElementById('kingdomsList');
+        const container = this.getEl('kingdomsList');
         container.innerHTML = '';
         
         const gameState = this.gameMode.getGameState();
@@ -957,8 +979,8 @@ class Game {
     }
 
     renderGenerals() {
-        const playerContainer = document.getElementById('playerGeneralsList');
-        const enemyContainer = document.getElementById('enemyGeneralsList');
+        const playerContainer = this.getEl('playerGeneralsList');
+        const enemyContainer = this.getEl('enemyGeneralsList');
         
         playerContainer.innerHTML = '';
         enemyContainer.innerHTML = '';
@@ -1049,7 +1071,7 @@ class Game {
     }
 
     renderProvinces() {
-        const container = document.getElementById('provincesMap');
+        const container = this.getEl('provincesMap');
         container.innerHTML = '';
         
         const gameState = this.gameMode.getGameState();
@@ -1157,7 +1179,7 @@ class Game {
     }
 
     renderActions() {
-        const container = document.getElementById('assignedActions');
+        const container = this.getEl('assignedActions');
         container.innerHTML = '';
         
         if (this.playerActions.length === 0) {
@@ -1209,9 +1231,9 @@ class Game {
     }
 
     showActionModal(general) {
-        const modal = document.getElementById('actionModal');
-        const modalTitle = document.getElementById('modalTitle');
-        const modalBody = document.getElementById('modalBody');
+        const modal = this.getEl('actionModal');
+        const modalTitle = this.getEl('modalTitle');
+        const modalBody = this.getEl('modalBody');
         
         modalTitle.textContent = `Assign Action - ${general.name}`;
         
@@ -1249,10 +1271,10 @@ class Game {
         modal.classList.add('active');
         
         // Event listener for action select
-        document.getElementById('actionType').addEventListener('change', (e) => {
+        this.getEl('actionType').addEventListener('change', (e) => {
             const actionType = e.target.value;
-            const targetGroup = document.getElementById('targetGroup');
-            const targetSelect = document.getElementById('targetProvince');
+            const targetGroup = this.getEl('targetGroup');
+            const targetSelect = this.getEl('targetProvince');
             
             if (['attack', 'defend'].includes(actionType)) {
                 targetGroup.style.display = 'block';
@@ -1271,19 +1293,19 @@ class Game {
         });
         
         // Event listener for form
-        document.getElementById('actionForm').addEventListener('submit', (e) => {
+        this.getEl('actionForm').addEventListener('submit', (e) => {
             e.preventDefault();
             this.assignAction(general);
         });
     }
 
     assignAction(general) {
-        const actionType = document.getElementById('actionType').value;
+        const actionType = this.getEl('actionType').value;
         if (!actionType) return;
         
         let targetId = null;
         if (['attack', 'defend'].includes(actionType)) {
-            targetId = document.getElementById('targetProvince').value;
+            targetId = this.getEl('targetProvince').value;
             if (!targetId) {
                 alert('Select a province');
                 return;
@@ -1321,23 +1343,23 @@ class Game {
     }
 
     closeModal() {
-        document.getElementById('actionModal').classList.remove('active');
+        this.getEl('actionModal').classList.remove('active');
         this.selectedGeneral = null;
     }
 
     showLoading(text = 'Loading...') {
-        const modal = document.getElementById('loadingModal');
-        document.getElementById('loadingText').textContent = text;
+        const modal = this.getEl('loadingModal');
+        this.getEl('loadingText').textContent = text;
         modal.classList.add('active');
     }
 
     hideLoading() {
-        document.getElementById('loadingModal').classList.remove('active');
+        this.getEl('loadingModal').classList.remove('active');
     }
 
 
     addToHistory(text, events = [], dayNumber = null) {
-        const container = document.getElementById('historyContent');
+        const container = this.getEl('historyContent');
         
         // Remove welcome message if exists
         const welcomeEntry = container.querySelector('.history-entry .welcome-message');

@@ -1,0 +1,242 @@
+/* Shell - layout y menú desplegable */
+
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.shell-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-surface);
+  border-bottom: var(--border-width) solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.shell-title {
+  font-family: var(--font-display);
+  font-size: var(--font-size-title);
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: 0.03em;
+  margin: 0;
+}
+
+.shell-menu-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+.shell-menu-toggle:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-strong);
+}
+.shell-menu-toggle:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.shell-menu-toggle[aria-expanded="true"] {
+  background: var(--color-surface-hover);
+  border-color: var(--color-accent-muted);
+}
+
+/* Icono hamburger */
+.shell-menu-toggle-icon {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.shell-menu-toggle-icon span {
+  display: block;
+  width: 1.25rem;
+  height: 2px;
+  background: currentColor;
+  border-radius: 1px;
+}
+
+.shell-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: var(--color-surface);
+  border-bottom: var(--border-width) solid var(--color-border);
+  box-shadow: var(--shadow-md);
+  max-height: min(80vh, 480px);
+  overflow-y: auto;
+  animation: shellDropdownIn var(--transition-normal) ease-out;
+}
+@keyframes shellDropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.shell-dropdown-inner {
+  padding: var(--space-lg);
+}
+
+/* Barra de título siempre visible por encima del contenido de las apps (p. ej. Classic con .game-container fixed) */
+.shell-header-wrap {
+  position: relative;
+  z-index: 1001;
+  flex-shrink: 0;
+  background: var(--color-surface);
+}
+.shell-header {
+  position: relative;
+  z-index: 1;
+}
+
+/* Grid de apps - responsive */
+.apps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+}
+@media (max-width: 480px) {
+  .apps-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* App cards: mismo estilo base que .btn de la aplicación */
+.app-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: left;
+  padding: var(--space-md);
+  min-height: 4rem;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+}
+.app-card:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-hover);
+  box-shadow: var(--shadow-md);
+}
+.app-card:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.app-card-name {
+  font-family: var(--font-display);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 var(--space-xs);
+}
+.app-card-desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: var(--line-height-normal);
+  flex: 1;
+}
+.app-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+}
+.app-card-badge {
+  display: inline-block;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+.app-card-badge-legacy {
+  color: var(--color-amber);
+  font-weight: 600;
+}
+
+.shell-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  padding-top: var(--space-md);
+  border-top: var(--border-width) solid var(--color-border);
+}
+.shell-actions .btn {
+  flex: 1;
+  min-width: 120px;
+}
+
+/* Menú desplegable solo Ajustes / Salir */
+.shell-dropdown-menu-only {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 12rem;
+}
+.shell-menu-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Página principal: lista de apps */
+.app-selector-page {
+  flex: 1;
+  padding: var(--space-xl);
+  overflow-y: auto;
+}
+.app-selector-page .section-title {
+  margin-top: 0;
+}
+
+/* App vacía (mismo estilo que la aplicación) */
+.app-blank-page {
+  flex: 1;
+  padding: var(--space-xl);
+  overflow-y: auto;
+}
+.app-blank-page .section-title {
+  margin-top: 0;
+}
+.app-blank-intro {
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+  line-height: var(--line-height-normal);
+  margin: 0;
+}
+.app-blank-intro code {
+  font-size: var(--font-size-sm);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--color-bg-elevated);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+}
+
+.shell-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--color-bg);
+}
+
+.shell-back {
+  margin-right: auto;
+}

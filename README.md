@@ -195,37 +195,192 @@ Edita `data/ai-config.js` para configurar:
 - Durante la esclavización, la general pierde amor por turno
 - Si el amor llega a 0, se convierte en esclava del captor
 
+## 🏗️ Arquitectura del software
+
+La aplicación tiene dos capas: la **shell React** (entrada principal) y las **apps** que se abren desde el selector. Todo lo que ves (menú, título, “Volver”, selector de apps, ajustes) pertenece a la shell; cada “app” (Classic Mode, Biblioteca de Datos, Mi App, etc.) es una pantalla que se monta dentro de la shell.
+
+### Flujo de entrada
+
+```
+index.html
+  → src/main.tsx (React root)
+    → App.tsx
+      → AppProvider (estado global: app actual, ajustes)
+      → Shell (barra de título + menú + contenido)
+        → import './apps'  (registra todas las apps al cargar)
+```
+
+- **AppProvider** (`src/store/AppContext.tsx`): Guarda `currentAppId` (qué app está abierta o `null` = selector), `settings` (resolución, idioma, volumen, etc.) y los setters. Los ajustes se persisten en `localStorage` al cambiar y al cerrar el modal.
+- **Shell** (`src/shell/Shell.tsx`): Siempre muestra la barra de título (título “NTR Adventure”, botón “← Volver” si hay app abierta, menú hamburguesa). El contenido es:
+  - Si `currentAppId === null` → **AppSelector** (grid de tarjetas “Elige una aplicación”).
+  - Si `currentAppId` tiene valor → **AppContainer** renderiza el `Component` de esa app.
+
+### Registro de apps
+
+- **Registry** (`src/apps/registry.ts`): Un `Map` que guarda, por `id`, el **manifest** (nombre, descripción, tipo, `legacy`) y el **Component** de React.
+- **Registro** (`src/apps/index.ts`): Aquí se llama a `registerApp()` por cada app. Cada app tiene un `id` único, un manifest y un `Component` que recibe la prop `appId`.
+- Las apps se listan en el selector con `getAvailableApps()` (se excluye la de id `_template`). Al hacer clic en una tarjeta se hace `setCurrentAppId(manifest.id)` y el Shell pasa a mostrar esa app dentro de **AppContainer**.
+
+### Dónde está cada cosa
+
+| Qué | Dónde |
+|-----|--------|
+| Estado global (app actual, ajustes) | `src/store/AppContext.tsx` |
+| Persistencia de ajustes | `src/store/settings.ts` (`settingsStore.save/load`) |
+| Barra de título, menú, selector de apps | `src/shell/` (Shell.tsx, MainMenu.tsx, AppSelector.tsx) |
+| Modal de Ajustes | `src/shell/Settings/SettingsModal.tsx` |
+| Definición y registro de cada app | `src/apps/index.ts` + carpeta `src/apps/<id>/` |
+| Contenedor que monta la app activa | `src/apps/AppContainer.tsx` |
+| Datos del juego (reinos, generales, provincias) para React | `src/data/gameData.ts` (reexporta `js/dataLoader.js` + hook `useGameData()`) |
+| Traducciones (es/en) de la shell | `src/i18n.ts` |
+| Tokens de diseño (colores, espaciado, fuentes) | `src/theme/tokens.css`, `src/theme/components.css` |
+| Lógica legacy del juego clásico | `js/game.js`, `js/gameModes/`, etc. |
+| Datos estáticos (reinos, generales, reglas, IA) | `data/*.js` (usados por `js/dataLoader.js`) |
+
+### Tipos de app
+
+- **`type: 'app'`**: App normal (ej. Biblioteca de Datos, Mi App).
+- **`type: 'game-mode'`**: Modo de juego (ej. Classic Mode).
+- **`legacy: true`** en el manifest: Muestra la etiqueta “Legacy” en el selector (para apps que reutilizan código legacy como Classic o Data Library).
+
+---
+
+## ➕ Implementar una nueva app
+
+Sigue estos pasos para añadir una app nueva que aparezca en “Elige una aplicación” y se abra al hacer clic.
+
+### 1. Crear la carpeta y el componente
+
+Crea una carpeta bajo `src/apps/` con el nombre de tu app (por ejemplo `miJuego`) y dentro un `App.tsx`:
+
+```
+src/apps/miJuego/
+  App.tsx
+```
+
+El componente debe ser un **default export** y recibir la prop `appId: string` (aunque no la uses). Usa las clases y variables CSS del tema para que se vea como el resto de la app:
+
+```tsx
+// src/apps/miJuego/App.tsx
+import type { ComponentType } from 'react'
+
+const MiJuegoApp: ComponentType<{ appId: string }> = () => (
+  <div className="app-blank-page">
+    <h2 className="section-title">Mi Juego</h2>
+    <p style={{ color: 'var(--color-text-muted)' }}>Contenido aquí.</p>
+  </div>
+)
+
+export default MiJuegoApp
+```
+
+Puedes usar:
+- **Clases de la shell**: `app-blank-page`, `section-title`, `btn`, `btn-primary`, etc. (ver `src/theme/components.css` y `src/shell/Shell.css`).
+- **Tokens CSS**: `var(--color-text)`, `var(--space-md)`, `var(--font-size-base)`, etc. (`src/theme/tokens.css`).
+- **Datos del juego**: `import { useGameData } from '@/data/gameData'` y luego `gameData.getKingdoms()`, etc., cuando `loaded` sea true.
+- **Idioma**: `const { settings } = useApp(); t('clave', settings.language)` si añades claves en `src/i18n.ts`.
+
+Puedes copiar **`src/apps/blank/App.tsx`** como base (app vacía con el estilo de la aplicación).
+
+### 2. Registrar la app
+
+En **`src/apps/index.ts`**:
+
+1. Importa tu componente:
+   ```ts
+   import MiJuegoApp from './miJuego/App'
+   ```
+2. Llama a `registerApp()` con el manifest y el Component:
+   ```ts
+   registerApp({
+     manifest: {
+       id: 'mi-juego',
+       name: 'Mi Juego',
+       description: 'Descripción breve que verá el usuario en la tarjeta',
+       type: 'app',
+       // legacy: true   solo si reutilizas código legacy y quieres la etiqueta "Legacy"
+     },
+     Component: MiJuegoApp,
+   })
+   ```
+
+El **`id`** debe ser único (solo letras, números y guiones). Es el que se usa internamente (`currentAppId`). El **`name`** y **`description`** son los que se muestran en el selector de apps.
+
+### 3. Probar
+
+1. Arranca el proyecto (`npm run dev` o `npm start` según uses Vite o el servidor clásico).
+2. Abre la app en el navegador: deberías ver tu app en la lista “Elige una aplicación”.
+3. Haz clic en la tarjeta: la shell debe mostrar la barra de título (con “← Volver”) y tu componente como contenido.
+
+### Resumen de archivos a tocar
+
+| Paso | Archivo | Qué hacer |
+|------|---------|-----------|
+| Crear app | `src/apps/<nombre>/App.tsx` | Componente React con default export y prop `appId`. |
+| Registrar | `src/apps/index.ts` | `import ... from './<nombre>/App'` y `registerApp({ manifest, Component })`. |
+
+Opcional: si tu app usa estilos propios, añade un CSS en su carpeta (ej. `src/apps/miJuego/miJuego.css`) e impórtalo en `App.tsx`. Si necesitas datos de reinos/generales/provincias, usa `useGameData()` desde `@/data/gameData`.
+
+---
+
 ## 📁 Estructura del Proyecto
 
 ```
 ntr-adv/
-├── .gitignore          # Exclusiones de Git
-├── .env.example        # Plantilla de variables de entorno
-├── package.json        # Configuración npm y dependencias
-├── server.js           # Servidor de desarrollo
-├── README.md           # Este archivo
-├── index.html          # Página principal
-├── data/               # Configuración modular del juego
-│   ├── kingdoms.js     # Configuración de reinos
-│   ├── generals.js     # Configuración de generales
-│   ├── provinces.js    # Configuración de provincias
-│   ├── game-rules.js   # Reglas y balance
-│   ├── ai-config.js    # Configuración de IA
-│   └── index.js        # Exportador centralizado
+├── .gitignore
+├── .env.example
+├── package.json
+├── vite.config.ts
+├── index.html              # Entrada principal (carga src/main.tsx)
+├── index.legacy.html       # Versión legacy (JS + html del juego)
+├── README.md
+├── server.js               # Servidor de desarrollo (hot reload, inyección .env)
+├── src/                    # Aplicación React (shell + apps)
+│   ├── main.tsx
+│   ├── App.tsx
+│   ├── index.css
+│   ├── i18n.ts             # Traducciones (es/en) de la shell
+│   ├── theme/              # Tokens y componentes reutilizables
+│   │   ├── tokens.css
+│   │   └── components.css
+│   ├── store/              # Estado global
+│   │   ├── AppContext.tsx  # currentAppId, settings, setters
+│   │   └── settings.ts     # Persistencia de ajustes (localStorage)
+│   ├── data/
+│   │   └── gameData.ts     # Acceso a datos del juego desde React (useGameData)
+│   ├── shell/              # Barra de título, menú, selector de apps, ajustes
+│   │   ├── Shell.tsx
+│   │   ├── AppSelector.tsx
+│   │   ├── MainMenu.tsx
+│   │   └── Settings/
+│   ├── apps/               # Apps que se abren desde el selector
+│   │   ├── index.ts        # Registro de todas las apps (registerApp)
+│   │   ├── registry.ts
+│   │   ├── types.ts
+│   │   ├── AppContainer.tsx
+│   │   ├── _template/      # Plantilla (no se muestra en selector)
+│   │   ├── blank/          # App vacía “Mi App”
+│   │   ├── classic/        # Classic Mode (legacy)
+│   │   ├── dataLibrary/    # Biblioteca de Datos
+│   │   └── <tu-app>/       # Tu nueva app: App.tsx (+ opcional .css)
+├── data/                   # Configuración del juego (legacy + gameData)
+│   ├── kingdoms.js
+│   ├── generals.js
+│   ├── provinces.js
+│   ├── game-rules.js
+│   ├── ai-config.js
+│   └── index.js
 ├── css/
-│   └── style.css       # Estilos del juego
+│   └── style.css          # Estilos del juego legacy / Classic
 ├── js/
-│   ├── ui/
-│   │   └── imageHelper.js # Helper para manejar imágenes
-│   ├── env.js          # Variables de entorno (generado automáticamente)
-│   ├── config.js       # Wrapper de compatibilidad (importa desde data/)
-│   ├── gameState.js    # Gestión del estado del juego
-│   ├── combat.js       # Sistema de combate
-│   ├── ai.js           # IA de decisión enemiga
-│   ├── aiIntegration.js # Integración con LLMs
-│   └── game.js         # Lógica principal del juego
+│   ├── dataLoader.js
+│   ├── config.js
+│   ├── game.js
+│   ├── gameModes/
+│   ├── apps/
+│   └── ...
 └── scripts/
-    └── inject-env.js   # Script para inyectar variables de entorno
+    └── inject-env.js
 ```
 
 ## 🔧 Desarrollo
@@ -234,6 +389,10 @@ ntr-adv/
 
 - `main`: Branch principal con código estable
 - `dev`: Branch de desarrollo
+
+### Agregar una nueva app (pantalla en el selector)
+
+Consulta la sección **[Implementar una nueva app](#-implementar-una-nueva-app)** más arriba: crear carpeta en `src/apps/<nombre>/`, exportar el componente y registrarlo en `src/apps/index.ts`.
 
 ### Agregar Nuevos Reinos o Generales
 
