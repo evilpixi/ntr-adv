@@ -1,9 +1,13 @@
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const chokidar = require('chokidar');
-require('dotenv').config();
+import http from 'http';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import chokidar from 'chokidar';
+import dotenv from 'dotenv';
 
+dotenv.config();
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = __dirname;
 
@@ -67,7 +71,7 @@ watcher.on('change', (filePath) => {
   
   // Reinyectar env si cambió .env
   if (filePath.includes('.env')) {
-    require('dotenv').config({ override: true });
+    dotenv.config({ override: true });
   }
   
   // Notificar a todos los clientes conectados
@@ -104,9 +108,184 @@ const server = http.createServer((req, res) => {
   
   // Endpoint para recargar variables de entorno
   if (req.url === '/api/reload-env' && req.method === 'POST') {
-    require('dotenv').config({ override: true });
+    dotenv.config({ override: true });
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ success: true }));
+    return;
+  }
+
+  // Chat de Narrated Story (IA) — tools para que el modelo pueda crear NPCs y lugares
+  const NARRATED_STORY_OPENAI_TOOLS = [
+    { type: 'function', function: { name: 'narrated_story_update_character', description: 'Update a character: location, activity, state, stats, corruption (0-100), loveRegent (0-100), lust (0-100), sexCount, developedKinks, feelingsToward.', parameters: { type: 'object', properties: { characterId: { type: 'string', description: 'Character id' }, patch: { type: 'object', description: 'Fields to update' } }, required: ['characterId', 'patch'] } } },
+    { type: 'function', function: { name: 'narrated_story_update_characters', description: 'Update multiple characters at once.', parameters: { type: 'object', properties: { updates: { type: 'array', description: 'List of { characterId, patch }' } }, required: ['updates'] } } },
+    { type: 'function', function: { name: 'narrated_story_update_place', description: 'Update an existing place.', parameters: { type: 'object', properties: { placeId: { type: 'string' }, patch: { type: 'object' } }, required: ['placeId', 'patch'] } } },
+    { type: 'function', function: { name: 'narrated_story_create_character', description: 'Register a new NPC when they become relevant (e.g. Kaelen, Lord Silas, Lysandra). Required: id (slug), name, role "npc".', parameters: { type: 'object', properties: { character: { type: 'object', description: 'id, name, role ("npc"), description, class, race, currentPlaceId, currentActivity, currentState, corruption (0-100), loveRegent (0-100), lust (0-100), sexCount, developedKinks, feelingsToward (object)' } }, required: ['character'] } } },
+    { type: 'function', function: { name: 'narrated_story_create_place', description: 'Add a new place when the story mentions it.', parameters: { type: 'object', properties: { placeId: { type: 'string' }, name: { type: 'string' }, description: { type: 'string' } }, required: ['placeId', 'name'] } } },
+  ];
+
+  if (req.url === '/api/narrated-story/chat' && req.method === 'POST') {
+    if (typeof fetch !== 'function') {
+      res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ error: 'Server needs Node 18+ (fetch). Current: ' + process.version }));
+      return;
+    }
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      const sendJson = (status, data) => {
+        if (res.headersSent) return;
+        res.writeHead(status, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify(data));
+      };
+      let payload;
+      try {
+        payload = JSON.parse(body || '{}');
+      } catch (e) {
+        sendJson(400, { error: 'Invalid JSON' });
+        return;
+      }
+      const { systemPrompt, messages } = payload;
+      if (!systemPrompt || !Array.isArray(messages)) {
+        sendJson(400, { error: 'Missing systemPrompt or messages' });
+        return;
+      }
+      let env, service, apiMessages;
+      try {
+        env = getEnvVars();
+        service = env.DEFAULT_AI_SERVICE || 'openai';
+        apiMessages = [
+          { role: 'system', content: systemPrompt },
+          ...messages.map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content || '' }))
+        ];
+      } catch (e) {
+        console.error('Narrated story chat setup error:', e);
+        sendJson(500, { error: e.message || 'Server setup failed' });
+        return;
+      }
+
+      function checkResponse(r, serviceName) {
+        if (r.ok) return r.json();
+        return r.text().then(txt => {
+          let msg = serviceName + ' API ' + r.status;
+          try {
+            const j = JSON.parse(txt);
+            if (j.error && j.error.message) msg += ': ' + j.error.message;
+            else if (j.error && typeof j.error === 'string') msg += ': ' + j.error;
+            else if (txt) msg += ': ' + txt.slice(0, 200);
+          } catch (_) {
+            if (txt) msg += ': ' + txt.slice(0, 200);
+          }
+          throw new Error(msg);
+        });
+      }
+
+      const callOpenAI = () => {
+        if (!env.OPENAI_API_KEY) return Promise.reject(new Error('OPENAI_API_KEY not set. Add it to .env'));
+        return fetch(`${env.OPENAI_BASE_URL}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${env.OPENAI_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: env.OPENAI_MODEL || 'gpt-4',
+            messages: apiMessages,
+            temperature: 0.8,
+            max_tokens: 2048,
+            tools: NARRATED_STORY_OPENAI_TOOLS,
+            tool_choice: 'auto',
+          })
+        }).then(r => checkResponse(r, 'OpenAI'));
+      };
+      const callDeepSeek = () => {
+        if (!env.DEEPSEEK_API_KEY) return Promise.reject(new Error('DEEPSEEK_API_KEY not set. Add it to .env'));
+        return fetch(`${env.DEEPSEEK_BASE_URL}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${env.DEEPSEEK_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: env.DEEPSEEK_MODEL || 'deepseek-chat',
+            messages: apiMessages,
+            temperature: 0.8,
+            max_tokens: 2048,
+            tools: NARRATED_STORY_OPENAI_TOOLS,
+            tool_choice: 'auto',
+          })
+        }).then(r => checkResponse(r, 'DeepSeek'));
+      };
+      const callGrok = () => {
+        if (!env.GROK_API_KEY) return Promise.reject(new Error('GROK_API_KEY not set. Add it to .env'));
+        return fetch(`${env.GROK_BASE_URL}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${env.GROK_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: env.GROK_MODEL || 'grok-beta',
+            messages: apiMessages,
+            temperature: 0.8,
+            max_tokens: 2048,
+            tools: NARRATED_STORY_OPENAI_TOOLS,
+            tool_choice: 'auto',
+          })
+        }).then(r => checkResponse(r, 'Grok'));
+      };
+      const callOllama = () => {
+        const base = env.OLLAMA_BASE_URL || 'http://localhost:11434';
+        return fetch(`${base}/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: env.OLLAMA_MODEL || 'llama2',
+            messages: apiMessages,
+            options: { temperature: 0.8, num_predict: 2048 }
+          })
+        }).then(r => checkResponse(r, 'Ollama'));
+      };
+
+      const parseResponse = (data, isOllama) => {
+        const rawContent = isOllama
+          ? (data.message && data.message.content ? data.message.content : '')
+          : (data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '');
+        let toolCalls;
+        if (!isOllama && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.tool_calls) {
+          toolCalls = data.choices[0].message.tool_calls.map(tc => {
+            const fn = tc.function || {};
+            let args = {};
+            try {
+              args = typeof fn.arguments === 'string' ? JSON.parse(fn.arguments) : (fn.arguments || {});
+            } catch (_) {}
+            return { name: fn.name || tc.name || '', args };
+          });
+        }
+        return { rawContent: rawContent || '', toolCalls };
+      };
+
+      const handlers = {
+        openai: callOpenAI,
+        deepseek: callDeepSeek,
+        grok: callGrok,
+        ollama: callOllama
+      };
+      const fn = handlers[service];
+      if (!fn) {
+        sendJson(400, { error: 'Unsupported service: ' + service });
+        return;
+      }
+      fn()
+        .then(data => {
+          const isOllama = service === 'ollama';
+          const out = parseResponse(data, isOllama);
+          sendJson(200, out);
+        })
+        .catch(err => {
+          console.error('Narrated story chat error:', err);
+          sendJson(500, { error: err.message || 'AI request failed' });
+        });
+    });
     return;
   }
 

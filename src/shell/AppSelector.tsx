@@ -19,8 +19,20 @@ export function AppSelector() {
             className="btn app-card"
             onClick={() => setCurrentAppId(manifest.id)}
           >
-            <p className="app-card-name">{manifest.name}</p>
-            <p className="app-card-desc">{manifest.description}</p>
+            <p className="app-card-name">
+              {manifest.id === 'narrated-story'
+                ? t('app.narrated-story.name', lang)
+                : manifest.id === 'cardgame'
+                  ? t('app.cardgame.name', lang)
+                  : manifest.name}
+            </p>
+            <p className="app-card-desc">
+              {manifest.id === 'narrated-story'
+                ? t('app.narrated-story.description', lang)
+                : manifest.id === 'cardgame'
+                  ? t('app.cardgame.description', lang)
+                  : manifest.description}
+            </p>
             <span className="app-card-badges">
               {manifest.legacy ? (
                 <span className="app-card-badge app-card-badge-legacy">{t('app.legacy', lang)}</span>

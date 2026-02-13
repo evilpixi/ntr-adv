@@ -8,7 +8,7 @@ import { SettingsModal } from './Settings/SettingsModal'
 import './Shell.css'
 
 export function Shell() {
-  const { currentAppId, setCurrentAppId, openSettings, setOpenSettings, settings } = useApp()
+  const { currentAppId, setCurrentAppId, openSettings, setOpenSettings, settings, setLanguage } = useApp()
   const lang = settings.language
   const [menuOpen, setMenuOpen] = useState(false)
   const dropdownRef = useRef<HTMLElement>(null)
@@ -37,6 +37,13 @@ export function Shell() {
     document.documentElement.dataset.uiScale = settings.uiScale
   }, [settings.uiScale])
 
+  useEffect(() => {
+    document.body.dataset.currentApp = currentAppId ?? ''
+    return () => {
+      document.body.dataset.currentApp = ''
+    }
+  }, [currentAppId])
+
   return (
     <div className="shell">
       <header className="shell-header-wrap" ref={dropdownRef}>
@@ -52,6 +59,24 @@ export function Shell() {
             </button>
           ) : null}
           <h1 className="shell-title">NTR Adventure</h1>
+          <div className="shell-lang-switch" aria-label={t('shell.langAria', lang)}>
+            <button
+              type="button"
+              className={`shell-lang-btn ${lang === 'en' ? 'active' : ''}`}
+              onClick={() => setLanguage('en')}
+              aria-pressed={lang === 'en'}
+            >
+              {t('shell.langEn', lang)}
+            </button>
+            <button
+              type="button"
+              className={`shell-lang-btn ${lang === 'es' ? 'active' : ''}`}
+              onClick={() => setLanguage('es')}
+              aria-pressed={lang === 'es'}
+            >
+              {t('shell.langEs', lang)}
+            </button>
+          </div>
           <button
             type="button"
             className="shell-menu-toggle"

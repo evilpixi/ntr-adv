@@ -1,6 +1,8 @@
 import { registerApp } from './registry'
 import TemplateApp from './_template/App'
 import NarratedStoryApp from './narratedStory/App'
+import NarratedStoryMenuOptions from './narratedStory/NarratedStoryMenuOptions'
+import CardGameApp from './cardgame/App'
 import ClassicApp from './classic/App'
 import DataLibraryApp from './dataLibrary/App'
 
@@ -16,12 +18,23 @@ registerApp({
 
 registerApp({
   manifest: {
-    id: 'blank',
-    name: 'Mi App',
-    description: 'App vacía lista para programar, con el estilo de la aplicación',
+    id: 'narrated-story',
+    name: 'NTR Narrated Story',
+    description: 'Roleplay your fantasies with the AI.',
     type: 'app',
   },
   Component: NarratedStoryApp,
+  MenuOptions: NarratedStoryMenuOptions,
+})
+
+registerApp({
+  manifest: {
+    id: 'cardgame',
+    name: 'Card Game',
+    description: 'Juego de cartas TCG: héroes, magia, objetos y soldados.',
+    type: 'app',
+  },
+  Component: CardGameApp,
 })
 
 registerApp({

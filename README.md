@@ -166,6 +166,88 @@ Edita `data/ai-config.js` para configurar:
 - Las plantillas de prompts
 - Los parámetros de generación
 
+## 🔌 Tools stateless e interfaz MCP
+
+Las **tools** están repartidas así:
+
+- **`tools/`** (raíz): tools globales (shell + cardgame): definiciones, `ToolContext`, `runTool(name, args, context)`. Soporte MCP general del proyecto.
+- **`src/tools/browserContext.ts`**: implementación de `ToolContext` para el navegador (listApps, getAppInfo, getToolList, cardgame stubs). Usar `createBrowserToolContext()` cuando el frontend necesite el contexto global.
+- **`src/apps/narratedStory/tools/`**: tools **solo** de la app Narrated Story: partida y stats. Definiciones en `definitions.ts`, interfaz `NarratedStoryToolContext` en `context.ts`, ejecutor en `run.ts`, contexto navegador en `browserContext.ts` (solo partida/stats, sin tools globales). Se importa desde `@/apps/narratedStory/tools`. **Cuando se ejecuta narratedStory, a la IA solo se le envían estas 4 tools** (no ntr_*, ni cardgame_*).
+
+Un **contexto** (Node con `mcp-data/`, o navegador con IndexedDB) implementa la I/O. Así puedes:
+
+- **En cada "siguiente turno"** (en la app o en un backend): llamar al LLM con las tools; cuando el LLM devuelva `tool_calls`, ejecutar por cada una `runNarratedStoryTool` si el nombre empieza por `narrated_story_`, si no `runTool`. No hace falta un servidor MCP para esto.
+- **Opcional: servidor MCP** para Cursor u otro cliente: arranca un proceso que expone todas las tools por stdio usando el contexto Node (`mcp-data/`).
+
+### Uso en "siguiente turno" (app o backend)
+
+**Solo en la app Narrated Story** (la IA solo ve las 4 tools de partida/stats):
+
+```ts
+import { runNarratedStoryTool, createNarratedStoryBrowserContext } from '@/apps/narratedStory/tools'
+
+const context = createNarratedStoryBrowserContext() // solo NarratedStoryToolContext
+for (const call of response.tool_calls) {
+  const result = await runNarratedStoryTool(call.function.name, JSON.parse(call.function.arguments ?? '{}'), context)
+  // Enviar result.text de vuelta al modelo como tool result
+}
+```
+
+**Si mezclas tools globales y de narrated story** (p. ej. un backend que atiende ambas), combina contextos: en Node usa `createNodeContext()` desde `mcp-server/context-node.ts` (implementa `ToolContext` y `NarratedStoryToolContext`). En navegador puedes componer `createBrowserToolContext()` con `createNarratedStoryBrowserContext()` y pasar el objeto combinado a `runTool` y `runNarratedStoryTool` según el prefijo del nombre.
+
+### Arrancar el servidor MCP
+
+```bash
+npm run mcp
+```
+
+El servidor usa transporte **stdio**: se queda escuchando en stdin/stdout. Para usarlo desde Cursor, configúralo como servidor MCP local.
+
+### Configurar en Cursor
+
+1. Abre **Cursor Settings** → **MCP** (o el archivo de configuración MCP de Cursor).
+2. Añade un servidor con **stdio**, por ejemplo:
+
+```json
+{
+  "mcpServers": {
+    "ntr-adv": {
+      "command": "npm",
+      "args": ["run", "mcp"],
+      "cwd": "C:\\ruta\\completa\\a\\ntr-adv"
+    }
+  }
+}
+```
+
+Ajusta `cwd` a la ruta absoluta de tu clon del proyecto. Así Cursor arranca el proceso y se comunica por stdio.
+
+### Directorio de datos
+
+Las tools que leen/escriben datos usan por defecto el directorio `mcp-data/` en la raíz del proyecto (o la variable de entorno `NTR_MCP_DATA`). Por ejemplo:
+
+- **narrated-story**: `mcp-data/narrated-story/` (partidas, `current.json`, system prompt).
+- **cardgame**: `mcp-data/cardgame/` (mazos en JSON).
+
+La app web guarda en IndexedDB; para que la IA vea o modifique datos, puedes exportar a `mcp-data` desde la app (si implementas el botón) o la IA puede escribir ahí y tú importar después.
+
+### Tools disponibles
+
+| Tool | App | Descripción |
+|------|-----|-------------|
+| `ntr_list_apps` | shell | Lista todas las apps (id, nombre, descripción). |
+| `ntr_get_app_info` | shell | Devuelve el manifest de una app por `appId`. |
+| `ntr_list_app_tools` | shell | Lista las tools MCP de una app. |
+| `narrated_story_list_saves` | narrated-story | Lista saves en `mcp-data/narrated-story/`. |
+| `narrated_story_read_save` | narrated-story | Lee el JSON de un save por nombre (usa `saveName: "current"` para la partida en curso). |
+| `narrated_story_update_character` | narrated-story | Actualiza stats/campos de un personaje de la partida. |
+| `narrated_story_update_characters` | narrated-story | Actualiza varios personajes a la vez. |
+| `cardgame_list_decks` | cardgame | Lista mazos en `mcp-data/cardgame/`. |
+| `cardgame_read_deck` | cardgame | Lee un mazo por nombre. |
+| `cardgame_write_deck` | cardgame | Escribe un mazo (JSON) en el directorio MCP. |
+
+Para **tools globales**: edita `tools/definitions.ts`, `tools/run.ts` y `tools/context.ts`; implementa en `mcp-server/context-node.ts` y, si aplica, en `src/tools/browserContext.ts`. Para **tools de Narrated Story**: edita `src/apps/narratedStory/tools/` (definitions, context, run, browserContext) y `mcp-server/context-node.ts`. El servidor MCP registra todas vía `mcp-server/register-tools.ts`.
+
 ## 🎯 Cómo Jugar
 
 1. **Inicio**: Al iniciar el juego, presiona el botón "Generar Historia Inicial" para crear la narrativa inicial usando IA (esto evita gastar tokens automáticamente)

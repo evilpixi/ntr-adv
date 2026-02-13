@@ -5,9 +5,14 @@
   box-sizing: border-box;
 }
 
+html,
 body {
+  height: 100%;
   margin: 0;
-  min-height: 100vh;
+  overflow: hidden;
+}
+
+body {
   font-family: var(--font-sans);
   font-size: var(--font-size-base);
   line-height: var(--line-height-normal);
@@ -16,8 +21,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Quitar el patrón de líneas oblicuas de css/style.css (body::before) en Narrated Story */
+body[data-current-app="narrated-story"]::before {
+  display: none !important;
+}
+
 #root {
-  min-height: 100vh;
+  height: 100%;
+  min-height: 0;
 }
 
 /* Escala de UI global (desde settings) */

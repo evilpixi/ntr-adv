@@ -8,3 +8,5 @@
  * Ver catálogo: https://react-icons.github.io/react-icons/icons/gi/
  */
 export * from 'react-icons/gi'
+// Alias: react-icons/gi solo exporta GiHearts, no GiHeart
+export { GiHearts as GiHeart } from 'react-icons/gi'

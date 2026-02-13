@@ -7,8 +7,18 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   plugins: [react()],
+  server: {
+    proxy: {
+      // Para que la app Narrated Story llame a la IA en dev, ejecuta también: node server.js
+      '/api': { target: 'http://localhost:3000', changeOrigin: true },
+    },
+  },
   resolve: {
-    alias: { '@': path.resolve(__dirname, 'src') },
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+      tools: path.resolve(__dirname, 'tools'),
+    },
+    dedupe: ['react', 'react-dom'],
   },
   build: {
     outDir: 'dist',

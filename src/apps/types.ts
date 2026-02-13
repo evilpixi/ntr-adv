@@ -13,4 +13,6 @@ export interface AppManifest {
 export interface AppRegistration {
   manifest: AppManifest
   Component: ComponentType<{ appId: string }>
+  /** Optional component rendered in the main menu when this app is active (e.g. "New game", "Clear save"). */
+  MenuOptions?: ComponentType<{ appId: string }>
 }
