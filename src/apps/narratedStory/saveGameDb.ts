@@ -39,6 +39,8 @@ export interface PartidaRecord {
   placeAdditionalInfo?: Record<string, string>
   /** Lugares de la partida (la IA puede crear nuevos). Si no está, la app usa los por defecto. */
   places?: Place[]
+  /** Número de turno actual (1-based). Se incrementa al completar cada turno y se guarda con la partida. */
+  turnNumber?: number
 }
 
 const DB_NAME = 'ntr-adv-narrated-story'
@@ -75,6 +77,8 @@ export async function savePartida(
     selectedHeroineIds?: string[]
     placeAdditionalInfo?: Record<string, string>
     places?: Place[]
+    /** Número de turno (1-based). Si no se pasa, se mantiene el existente. */
+    turnNumber?: number
   }
 ): Promise<void> {
   const now = Date.now()
@@ -94,17 +98,15 @@ export async function savePartida(
     placeAdditionalInfo:
       options?.placeAdditionalInfo !== undefined ? options.placeAdditionalInfo : existing?.placeAdditionalInfo,
     places: options?.places !== undefined ? options.places : existing?.places,
+    turnNumber: options?.turnNumber ?? existing?.turnNumber ?? 1,
   }
 
-  if (existing) {
-    await db.partidas.update(CURRENT_PARTIDA_ID, payload)
-  } else {
-    await db.partidas.add({
-      id: CURRENT_PARTIDA_ID,
-      createdAt: now,
-      ...payload,
-    })
+  const record: PartidaRecord = {
+    id: CURRENT_PARTIDA_ID,
+    createdAt: existing?.createdAt ?? now,
+    ...payload,
   }
+  await db.partidas.put(record)
 }
 
 /**

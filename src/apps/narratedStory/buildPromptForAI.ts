@@ -42,6 +42,27 @@ export interface FullSystemPromptForTurnParams extends FullPromptParams {
 }
 
 /**
+ * Orden lógico de tools que la IA debe seguir cada turno (y que el host aplica al ejecutar).
+ * Debe coincidir con NARRATED_STORY_TOOL_ORDER en tools/definitions.ts.
+ */
+const TOOL_ORDER_INSTRUCTION = [
+  '---',
+  '## TOOL EXECUTION ORDER (mandatory every turn)',
+  '',
+  '**You MUST call tools in this exact order.** The host will reorder any other order to this one. Follow it so your reasoning is consistent:',
+  '',
+  '1. **narrated_story_get_state** – Call at the start of every turn to read the current partida (characters, places, relationships). Use this result to keep the simulation consistent.',
+  '2. **narrated_story_create_place** – If the narrative introduces a new location, create it first.',
+  '3. **narrated_story_create_character** – If a new NPC appears, register them here.',
+  '4. **narrated_story_update_place** – Update existing places (name, description) if needed.',
+  '5. **narrated_story_set_character_locations** – Set where each character is (single source of truth for Character and Places views). Call whenever someone moves or you created a new place and characters are there.',
+  '6. **narrated_story_update_character** / **narrated_story_update_characters** – Update stats, corruption, feelingsToward, activity, state, etc. Do this after locations so movement is already applied.',
+  '',
+  'Summary: read state → create new places/characters → update places → set locations → update character data.',
+  '',
+].join('\n')
+
+/**
  * Genera el texto que explica a la IA qué tools tiene disponibles (solo las de la app narrativa) y cómo usarlas.
  * Se incluye en el system prompt en cada turno.
  */
@@ -55,6 +76,9 @@ export function getMCPInstructionsForNarratedStory(): string {
     '',
     'You have access to the following tools. Call them when you need to read or update game state.',
     'The host will execute the tool and give you the result. Use the result to continue the narrative.',
+    '**Always write your narrative text first (or together with tool calls); never send a response that contains only tool calls and no story text.**',
+    '',
+    TOOL_ORDER_INSTRUCTION,
     '',
   ]
 
@@ -82,11 +106,13 @@ export function getSimulationInstructions(): string {
     '---',
     '## SIMULATION UPDATES (use tools every turn)',
     '',
+    '0) **Every turn**: Start by calling narrated_story_get_state to read the current partida. Then call the other tools in the order defined in "TOOL EXECUTION ORDER" above (create place/character if needed, then set_character_locations, then update_character/update_characters).',
+    '',
     '1) New NPCs: When an interesting character appears (e.g. Lysandra, Captain Kaelen), register them with narrated_story_create_character (id = slug like "lysandra", role = "npc"). Set currentPlaceId and feelingsToward as appropriate.',
     '',
-    '2) New places: When a location is mentioned (road to Emeroth, prince\'s chambers, etc.), create it with narrated_story_create_place, then use update_character to set currentPlaceId for characters who are there.',
+    '2) New places: When a location is mentioned (road to Emeroth, prince\'s chambers, etc.), create it with narrated_story_create_place. **If any character is at that place in your narrative (they went there, arrived there, or are there), you MUST in the same turn call narrated_story_update_character or narrated_story_update_characters** and set currentPlaceId to the new place id (and currentActivity/currentState) for each of those characters. Otherwise the Places view will still show them at the old location.',
     '',
-    '3) Movement: When characters change location, call update_character with currentPlaceId and currentActivity so the next turn has accurate data.',
+    '3) Movement: **Whenever your narrative has characters in a location or moving to a location**, use narrated_story_set_character_locations with a list of { characterId, placeId, currentActivity?, currentState? }. This is the single source of truth: the Character tab and the Places tab both read from it, so there are no duplicates—each character appears in exactly one place. If you created a place (e.g. "Camino a Emeroth") and the party is going there, call set_character_locations for each character with that placeId. Alternatively you can use update_character/update_characters with currentPlaceId.',
     '',
     '4) Relationships and corruption: Update feelingsToward when relationships shift (e.g. Aria feels "indifference" toward "kaelen" at first; later "attraction" or "fear"). Update corruption (0-100), sexCount, and developedKinks after sexual events.',
     '',
@@ -101,6 +127,8 @@ export function getOutputFormatInstructions(): string {
   return [
     '---',
     '## OUTPUT FORMAT (end of each reply)',
+    '',
+    '**CRITICAL: You MUST always write narrative text in your response.** Never reply with only tool calls. Every turn must contain at least one paragraph (or several) of story text describing what happens in the scene. Tool calls (e.g. narrated_story_update_character) are in addition to the narrative, not a replacement. The player must always read a descriptive reply.',
     '',
     'Keep the main narrative to a moderate length: 4–6 paragraphs per reply (or more when the scene deserves it). Be descriptive and immersive; avoid being too brief.',
     '',

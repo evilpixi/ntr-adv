@@ -17,7 +17,7 @@ El juego **no** expone una API REST de datos ni de IA: los datos se cargan desde
 
 - **Runtime**: Node.js (módulos nativos `http`, `fs`, `path`).
 - **Dependencias**: `dotenv` (variables de entorno), `chokidar` (observación de archivos para hot reload).
-- **Puerto**: `process.env.PORT` o `3000`.
+- **Puerto**: `process.env.PORT` o `5173`.
 - **Directorio público**: la raíz del proyecto (`__dirname`).
 
 ---
@@ -143,4 +143,4 @@ npm start
 node server.js
 ```
 
-El servidor escucha en `http://localhost:3000` (o en el puerto definido en `PORT`). Para desarrollo, con hot reload activo, los cambios en `js/`, `css/`, `data/` e `index.html` provocan un aviso por SSE y la recarga automática en el cliente si está conectado a `/api/hot-reload`.
+El servidor escucha en `http://localhost:5173` (o en el puerto definido en `PORT`). Para desarrollo, con hot reload activo, los cambios en `js/`, `css/`, `data/` e `index.html` provocan un aviso por SSE y la recarga automática en el cliente si está conectado a `/api/hot-reload`.

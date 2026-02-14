@@ -11,8 +11,6 @@ import { DEFAULT_KINKS_PROMPT } from './defaultKinksPrompt'
 import { DEFAULT_EXTRA_INDICATIONS } from './defaultExtraIndications'
 import { runNextTurn, type TurnMessage } from './runNextTurn'
 import { realAIProvider } from './aiProviderApi'
-import { buildFullSystemPromptForTurn } from './buildPromptForAI'
-import { parseAppResponse } from './parseAppResponse'
 import { StoryChat, CharactersView, PlacesView, PlayerLauncher, StoryPromptStep } from './components'
 import type { NarratedStoryKey } from './locales/keys'
 import type { ChatMessage, Personaje, PlayerProfile, Place } from './types'
@@ -91,6 +89,8 @@ const NarratedStoryApp: ComponentType<{ appId: string }> = () => {
   const [placeAdditionalInfo, setPlaceAdditionalInfo] = useState<Record<string, string>>({})
   /** Lugares de la partida (la IA puede crear/actualizar; si no hay partida cargada se usan los por defecto). */
   const [places, setPlaces] = useState<Place[]>(placesOfInterest)
+  /** Número de turno actual (1-based). Se guarda con la partida y se incrementa al completar cada turno. */
+  const [turnNumber, setTurnNumber] = useState(1)
   /** Tras el launcher, perfil pendiente hasta que el usuario confirme el prompt de historia. */
   const [pendingProfileAfterLauncher, setPendingProfileAfterLauncher] = useState<PlayerProfile | null>(null)
   const [creatingIntro, setCreatingIntro] = useState(false)
@@ -133,6 +133,7 @@ const NarratedStoryApp: ComponentType<{ appId: string }> = () => {
           )
           setPlaceAdditionalInfo(partida.placeAdditionalInfo ?? {})
           setPlaces(partida.places ?? placesOfInterest)
+          setTurnNumber(partida.turnNumber ?? 1)
         }
       })
       .finally(() => setLoading(false))
@@ -158,8 +159,9 @@ const NarratedStoryApp: ComponentType<{ appId: string }> = () => {
       selectedHeroineIds,
       placeAdditionalInfo,
       places,
+      turnNumber,
     }).catch(console.error)
-  }, [loading, playerProfile, characters, messages, sentMessages, systemPrompt, storyPrompt, kinksPrompt, extraIndications, selectedHeroineIds, placeAdditionalInfo, places])
+  }, [loading, playerProfile, characters, messages, sentMessages, systemPrompt, storyPrompt, kinksPrompt, extraIndications, selectedHeroineIds, placeAdditionalInfo, places, turnNumber])
 
   const handleSend = () => {
     const text = input.trim()
@@ -189,6 +191,7 @@ const NarratedStoryApp: ComponentType<{ appId: string }> = () => {
         extraIndications,
         maxMessages: 50,
         language,
+        turnNumber,
       },
       AI_PROVIDER
     )
@@ -203,6 +206,7 @@ const NarratedStoryApp: ComponentType<{ appId: string }> = () => {
         setMessages((prev) => [...prev, appReply])
         setCharactersOverride(nextCharacters)
         setPlaces(nextPlaces)
+        setTurnNumber((n) => n + 1)
         console.log('[Narrated Story] UI updated: characters=', nextCharacters.length, 'places=', nextPlaces.length)
       })
       .catch((err) => {
@@ -226,27 +230,29 @@ const NarratedStoryApp: ComponentType<{ appId: string }> = () => {
   const handleCreateIntro = () => {
     if (!playerProfile) return
     setCreatingIntro(true)
-    const fullSystemPrompt = buildFullSystemPromptForTurn({
-      playerProfile,
-      characters,
-      messages: [],
-      places,
-      systemPrompt,
-      storyPrompt,
-      kinksPrompt,
-      extraIndications,
-      maxMessages: 0,
-      language,
-    })
-    realAIProvider({
-      systemPrompt: fullSystemPrompt,
-      userMessage: INTRO_USER_MESSAGE,
-      messages: [{ id: 'intro', role: 'user', content: INTRO_USER_MESSAGE }],
-    })
-      .then(({ rawContent }) => {
-        const { narrative } = parseAppResponse(rawContent)
-        const appMsg: ChatMessage = { id: nextId(), role: 'app', content: narrative || rawContent }
+    const introTurnMessages: TurnMessage[] = [{ id: 'intro', role: 'user', content: INTRO_USER_MESSAGE }]
+    runNextTurn(
+      {
+        userMessage: INTRO_USER_MESSAGE,
+        playerProfile,
+        characters,
+        messages: introTurnMessages,
+        places,
+        systemPrompt,
+        storyPrompt,
+        kinksPrompt,
+        extraIndications,
+        maxMessages: 0,
+        language,
+        turnNumber: 0,
+      },
+      AI_PROVIDER
+    )
+      .then((result) => {
+        const appMsg: ChatMessage = { id: nextId(), role: 'app', content: result.narrative }
         setMessages([appMsg])
+        setCharactersOverride(result.characters)
+        setPlaces(result.places)
       })
       .catch((err) => {
         console.error('Create intro error:', err)
@@ -289,6 +295,7 @@ const NarratedStoryApp: ComponentType<{ appId: string }> = () => {
       extraIndications: values.extraIndications,
       selectedHeroineIds: heroines.map((h) => h.id),
       places: placesOfInterest,
+      turnNumber: 1,
     }).catch(console.error)
     setPlayerProfile(profile)
     setCharactersOverride(initialCharacters)
@@ -298,6 +305,7 @@ const NarratedStoryApp: ComponentType<{ appId: string }> = () => {
     setKinksPrompt(values.kinksPrompt)
     setExtraIndications(values.extraIndications)
     setSelectedHeroineIds(heroines.map((h) => h.id))
+    setTurnNumber(1)
     setPendingProfileAfterLauncher(null)
   }
 
@@ -454,6 +462,7 @@ const NarratedStoryApp: ComponentType<{ appId: string }> = () => {
         {activeTab === 'characters' && (
           <CharactersView
             characters={characters}
+            places={places}
             getGeneralImage={getGeneralImageOrFallback}
             playerProfile={playerProfile}
           />

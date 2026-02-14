@@ -40,6 +40,17 @@ export const NARRATED_STORY_TOOL_DEFINITIONS: NarrativeToolDefinition[] = [
     },
   },
   {
+    name: 'narrated_story_set_character_locations',
+    description: 'Set where each character is located. Single source of truth: the Character view and Places view both read from this. Each character can only be in one place (or "no location"). Pass an array of { characterId, placeId, currentActivity?, currentState? }. Use placeId = null or omit to set character as having no location. When you set a character to a place, they are removed from their previous place automatically (no duplicates). Call this when characters move or when you create a new place and characters go there.',
+    title: 'Set character locations',
+    parameters: {
+      locations: {
+        type: 'array',
+        description: 'List of { characterId: string, placeId: string | null, currentActivity?: string, currentState?: string }. Each character appears in exactly one place in the UI; setting placeId updates both the Character tab and the Places tab.',
+      },
+    },
+  },
+  {
     name: 'narrated_story_update_place',
     description: 'Update an existing place: name, description, or additionalInfo. Use when a location gains new narrative relevance.',
     title: 'Update place',
@@ -64,7 +75,7 @@ export const NARRATED_STORY_TOOL_DEFINITIONS: NarrativeToolDefinition[] = [
   },
   {
     name: 'narrated_story_create_place',
-    description: 'Add a new place when the story mentions it (e.g. road to Emeroth, prince\'s chambers, royal gardens). Then use update_character to set characters\' currentPlaceId when they move there.',
+    description: 'Add a new place when the story mentions it (e.g. road to Emeroth, prince\'s chambers). **In the same turn** you must also call narrated_story_update_character or narrated_story_update_characters for every character who is at that place or moving there in your narrative, setting currentPlaceId to this place\'s id (and currentActivity/currentState). Otherwise the Places view will still show them at the old location.',
     title: 'Create place',
     parameters: {
       placeId: { type: 'string', description: 'Unique id (e.g. "camino-emeroth", "aposentos-principe")' },
@@ -76,4 +87,30 @@ export const NARRATED_STORY_TOOL_DEFINITIONS: NarrativeToolDefinition[] = [
 
 export function getNarratedStoryToolDefinition(name: string): NarrativeToolDefinition | undefined {
   return NARRATED_STORY_TOOL_DEFINITIONS.find((t) => t.name === name)
+}
+
+/**
+ * Orden canónico de ejecución de tools por turno: primero leer estado, luego crear entidades,
+ * luego actualizar lugares, luego ubicaciones de personajes, luego actualizaciones de personajes.
+ * Las tool calls devueltas por la IA se reordenan según esta lista antes de ejecutarse.
+ */
+export const NARRATED_STORY_TOOL_ORDER: string[] = [
+  'narrated_story_get_state',
+  'narrated_story_create_place',
+  'narrated_story_create_character',
+  'narrated_story_update_place',
+  'narrated_story_set_character_locations',
+  'narrated_story_update_character',
+  'narrated_story_update_characters',
+]
+
+export function sortToolCallsByCanonicalOrder(
+  calls: Array<{ name: string; args: Record<string, unknown> }>
+): Array<{ name: string; args: Record<string, unknown> }> {
+  const order = NARRATED_STORY_TOOL_ORDER
+  const indexOf = (name: string) => {
+    const i = order.indexOf(name)
+    return i === -1 ? order.length : i
+  }
+  return [...calls].sort((a, b) => indexOf(a.name) - indexOf(b.name))
 }

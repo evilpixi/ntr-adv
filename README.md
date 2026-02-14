@@ -15,11 +15,7 @@ Un juego web de aventura gráfica basado en texto con sistema de reinos, general
 
 - Node.js (v14 o superior) y npm
 - Navegador web moderno (Chrome, Firefox, Safari, Edge)
-- API keys para al menos uno de los servicios de IA soportados:
-  - OpenAI
-  - DeepSeek
-  - Grok (xAI)
-  - Ollama (modelo local)
+- **Solo si quieres usar el chat de Narrated Story**: API key de un proveedor de IA. Se configura dentro de la app en **Ajustes → Chat con IA** (OpenAI, DeepSeek, Grok u Ollama). El resto del juego funciona sin configurar nada.
 
 ## 🚀 Instalación
 
@@ -34,38 +30,13 @@ cd ntr-adv
 npm install
 ```
 
-3. Copia el archivo de ejemplo de variables de entorno:
-```bash
-cp .env.example .env
-```
+3. Arranca el proyecto (todo en **http://localhost:5173**):
+   - **Desarrollo**: `npm run dev` → Vite (hot reload).
+   - **Producción**: `npm run build` y luego `npm start` → sirve la carpeta `dist/` con Vite preview.
 
-4. Edita el archivo `.env` y agrega tus API keys:
-```env
-OPENAI_API_KEY=tu_api_key_aqui
-# O el servicio de IA que prefieras usar
-DEFAULT_AI_SERVICE=openai
-```
+4. Abre **http://localhost:5173** en el navegador.
 
-5. Inicia el servidor de desarrollo:
-```bash
-npm start
-```
-
-6. Accede a `http://localhost:3000` en tu navegador
-
-El servidor automáticamente:
-- Inyecta las variables de entorno al frontend
-- Sirve los archivos estáticos con headers de no-cache
-- **Hot Reload**: Recarga automáticamente la página cuando detecta cambios en archivos JS, CSS, HTML o data/
-- Observa cambios en tiempo real usando Server-Sent Events
-
-### Hot Reload
-
-El servidor incluye hot reload automático:
-- Detecta cambios en archivos `.js`, `.css`, `.html` y archivos en `data/`
-- Recarga automáticamente la página en el navegador
-- No necesitas refrescar manualmente después de hacer cambios
-- Los archivos se sirven con headers de no-cache para evitar problemas de caché
+Proyecto **standalone**: no hace falta ningún servidor propio. El chat de Narrated Story llama a la IA desde el navegador; cada usuario introduce su API key en **Ajustes → Chat con IA** (se guarda en localStorage).
 
 ## ⚙️ Configuración
 
@@ -242,6 +213,7 @@ La app web guarda en IndexedDB; para que la IA vea o modifique datos, puedes exp
 | `narrated_story_read_save` | narrated-story | Lee el JSON de un save por nombre (usa `saveName: "current"` para la partida en curso). |
 | `narrated_story_update_character` | narrated-story | Actualiza stats/campos de un personaje de la partida. |
 | `narrated_story_update_characters` | narrated-story | Actualiza varios personajes a la vez. |
+| `narrated_story_set_character_locations` | narrated-story | Asigna ubicación de personajes (placeId). Fuente única: vista Personajes y Lugares; sin duplicados. |
 | `cardgame_list_decks` | cardgame | Lista mazos en `mcp-data/cardgame/`. |
 | `cardgame_read_deck` | cardgame | Lee un mazo por nombre. |
 | `cardgame_write_deck` | cardgame | Escribe un mazo (JSON) en el directorio MCP. |
@@ -416,7 +388,6 @@ ntr-adv/
 ├── index.html              # Entrada principal (carga src/main.tsx)
 ├── index.legacy.html       # Versión legacy (JS + html del juego)
 ├── README.md
-├── server.js               # Servidor de desarrollo (hot reload, inyección .env)
 ├── src/                    # Aplicación React (shell + apps)
 │   ├── main.tsx
 │   ├── App.tsx
@@ -513,7 +484,7 @@ Edita `promptTemplate` en `data/ai-config.js` para cambiar cómo se genera la na
 
 - Asegúrate de haber ejecutado `npm install` primero
 - Verifica que el servidor esté corriendo con `npm start`
-- No abras el HTML directamente, siempre usa el servidor (http://localhost:3000)
+- No abras el HTML directamente, siempre usa el servidor (http://localhost:5173)
 - Verifica que el archivo `js/env.js` se haya generado correctamente
 - Revisa la consola del navegador para errores
 
@@ -522,7 +493,7 @@ Edita `promptTemplate` en `data/ai-config.js` para cambiar cómo se genera la na
 - Verifica que Node.js esté instalado: `node --version`
 - Verifica que npm esté instalado: `npm --version`
 - Asegúrate de haber ejecutado `npm install` en el directorio del proyecto
-- Verifica que el puerto 3000 no esté en uso
+- Verifica que el puerto 5173 no esté en uso
 
 ## 🌐 Despliegue en GitHub Pages
 

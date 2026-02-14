@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "start": "node server.js",
+    "start": "vite preview --port 5173",
     "mcp": "tsx mcp-server/index.ts",
     "cap:init": "capacitor init",
     "cap:add:android": "capacitor add android",

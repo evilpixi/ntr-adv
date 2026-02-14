@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useApp } from '../../store/AppContext'
 import { settingsStore } from '../../store/settings'
 import {
@@ -6,8 +6,16 @@ import {
   UI_SCALE_OPTIONS,
   LANGUAGE_OPTIONS,
 } from '../../store/settings'
+import { loadAiSettings, saveAiSettings, type AIServiceKey } from '../../store/aiSettings'
 import { t } from '../../i18n'
 import './SettingsModal.css'
+
+const AI_SERVICE_OPTIONS: { value: AIServiceKey; labelEs: string; labelEn: string }[] = [
+  { value: 'openai', labelEs: 'OpenAI (GPT)', labelEn: 'OpenAI (GPT)' },
+  { value: 'deepseek', labelEs: 'DeepSeek', labelEn: 'DeepSeek' },
+  { value: 'grok', labelEs: 'Grok (xAI)', labelEn: 'Grok (xAI)' },
+  { value: 'ollama', labelEs: 'Ollama (local)', labelEn: 'Ollama (local)' },
+]
 
 interface SettingsModalProps {
   onClose: () => void
@@ -26,6 +34,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
     setCurrentAppId,
   } = useApp()
   const lang = settings.language
+  const [aiSettings, setAiSettings] = useState(() => loadAiSettings())
 
   const handleClose = useCallback(() => {
     settingsStore.save(settings)
@@ -179,6 +188,145 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                 ))}
               </select>
             </div>
+          </section>
+
+          <section className="settings-section">
+            <h3 className="settings-section-title">{t('settings.aiSection', lang)}</h3>
+            <div className="settings-row">
+              <label className="label">{t('settings.aiService', lang)}</label>
+              <select
+                className="select"
+                value={aiSettings.service}
+                onChange={(e) => {
+                  const v = e.target.value as AIServiceKey
+                  setAiSettings((prev) => ({ ...prev, service: v }))
+                  saveAiSettings({ service: v })
+                }}
+                style={{ maxWidth: '14rem' }}
+              >
+                {AI_SERVICE_OPTIONS.map(({ value, labelEs, labelEn }) => (
+                  <option key={value} value={value}>
+                    {lang === 'es' ? labelEs : labelEn}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {aiSettings.service !== 'ollama' && (
+              <>
+                <div className="settings-row" style={{ marginTop: 'var(--space-md)' }}>
+                  <label className="label">{t('settings.aiApiKey', lang)}</label>
+                  <input
+                    type="password"
+                    className="input"
+                    placeholder={t('settings.aiApiKeyPlaceholder', lang)}
+                    value={
+                      aiSettings.service === 'openai'
+                        ? aiSettings.openaiApiKey
+                        : aiSettings.service === 'deepseek'
+                          ? aiSettings.deepseekApiKey
+                          : aiSettings.grokApiKey
+                    }
+                    onChange={(e) => {
+                      const v = e.target.value
+                      const key =
+                        aiSettings.service === 'openai'
+                          ? 'openaiApiKey'
+                          : aiSettings.service === 'deepseek'
+                            ? 'deepseekApiKey'
+                            : 'grokApiKey'
+                      setAiSettings((prev) => ({ ...prev, [key]: v }))
+                      saveAiSettings({ [key]: v })
+                    }}
+                    style={{ maxWidth: '20rem' }}
+                    autoComplete="off"
+                  />
+                </div>
+                <div className="settings-row" style={{ marginTop: 'var(--space-sm)' }}>
+                  <label className="label">{t('settings.aiBaseUrl', lang)}</label>
+                  <input
+                    type="text"
+                    className="input"
+                    value={
+                      aiSettings.service === 'openai'
+                        ? aiSettings.openaiBaseUrl
+                        : aiSettings.service === 'deepseek'
+                          ? aiSettings.deepseekBaseUrl
+                          : aiSettings.grokBaseUrl
+                    }
+                    onChange={(e) => {
+                      const v = e.target.value
+                      const key =
+                        aiSettings.service === 'openai'
+                          ? 'openaiBaseUrl'
+                          : aiSettings.service === 'deepseek'
+                            ? 'deepseekBaseUrl'
+                            : 'grokBaseUrl'
+                      setAiSettings((prev) => ({ ...prev, [key]: v }))
+                      saveAiSettings({ [key]: v })
+                    }}
+                    style={{ maxWidth: '20rem' }}
+                  />
+                </div>
+                <div className="settings-row" style={{ marginTop: 'var(--space-sm)' }}>
+                  <label className="label">{t('settings.aiModel', lang)}</label>
+                  <input
+                    type="text"
+                    className="input"
+                    value={
+                      aiSettings.service === 'openai'
+                        ? aiSettings.openaiModel
+                        : aiSettings.service === 'deepseek'
+                          ? aiSettings.deepseekModel
+                          : aiSettings.grokModel
+                    }
+                    onChange={(e) => {
+                      const v = e.target.value
+                      const key =
+                        aiSettings.service === 'openai'
+                          ? 'openaiModel'
+                          : aiSettings.service === 'deepseek'
+                            ? 'deepseekModel'
+                            : 'grokModel'
+                      setAiSettings((prev) => ({ ...prev, [key]: v }))
+                      saveAiSettings({ [key]: v })
+                    }}
+                    style={{ maxWidth: '14rem' }}
+                  />
+                </div>
+              </>
+            )}
+            {aiSettings.service === 'ollama' && (
+              <>
+                <div className="settings-row" style={{ marginTop: 'var(--space-md)' }}>
+                  <label className="label">{t('settings.aiBaseUrl', lang)}</label>
+                  <input
+                    type="text"
+                    className="input"
+                    value={aiSettings.ollamaBaseUrl}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      setAiSettings((prev) => ({ ...prev, ollamaBaseUrl: v }))
+                      saveAiSettings({ ollamaBaseUrl: v })
+                    }}
+                    style={{ maxWidth: '20rem' }}
+                  />
+                </div>
+                <div className="settings-row" style={{ marginTop: 'var(--space-sm)' }}>
+                  <label className="label">{t('settings.aiModel', lang)}</label>
+                  <input
+                    type="text"
+                    className="input"
+                    value={aiSettings.ollamaModel}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      setAiSettings((prev) => ({ ...prev, ollamaModel: v }))
+                      saveAiSettings({ ollamaModel: v })
+                    }}
+                    style={{ maxWidth: '14rem' }}
+                  />
+                </div>
+              </>
+            )}
           </section>
 
           <div className="settings-actions">

@@ -638,6 +638,19 @@
   }
 }
 
+/* Landscape: panel izquierdo — retratos más altos, adaptados al alto de la imagen sin recortes */
+@media (min-width: 768px) {
+  #narrated-story-panel-characters .ns-char-portrait-wrap {
+    max-height: none;
+    min-height: 160px;
+  }
+  #narrated-story-panel-characters .ns-char-portrait-wrap .ns-char-portrait {
+    object-fit: contain;
+    object-position: center top;
+    transform: none;
+  }
+}
+
 /* ---- Places view: lugares de interés y personajes por lugar ---- */
 
 .ns-places-view {

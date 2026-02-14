@@ -15,8 +15,11 @@ export async function runNarratedStoryTool(
   args: Record<string, unknown>,
   context: NarratedStoryToolContext
 ): Promise<ToolResult> {
+  const argsKeys = args && typeof args === 'object' ? Object.keys(args) : []
+  console.log('[Narrated Story MCP] runNarratedStoryTool called: name=', name, 'argsKeys=', argsKeys.join(', ') || '(none)', 'payload=', JSON.stringify(args ?? {}))
   const def = getNarratedStoryToolDefinition(name)
   if (!def) {
+    console.warn('[Narrated Story MCP] unknown tool:', name)
     return { text: JSON.stringify({ error: `Unknown narrated story tool: ${name}` }), isError: true }
   }
 
@@ -54,6 +57,35 @@ export async function runNarratedStoryTool(
         await context.updateCharacters(updates)
         console.log(`${LOG_PREFIX} update_characters: saved OK`)
         return { text: JSON.stringify({ ok: true, message: 'Characters updated.', count: updates.length }) }
+      }
+      case 'narrated_story_set_character_locations': {
+        const locations = args.locations as Array<{
+          characterId: string
+          placeId?: string | null
+          currentActivity?: string
+          currentState?: string
+        }> | undefined
+        if (!Array.isArray(locations)) return { text: JSON.stringify({ error: 'Missing or invalid locations array' }), isError: true }
+        const updates = locations.map((loc) => {
+          const characterId = loc.characterId
+          if (characterId == null || typeof characterId !== 'string') {
+            return null
+          }
+          const patch: Record<string, unknown> = {}
+          if (loc.placeId !== undefined) {
+            patch.currentPlaceId = loc.placeId === null || loc.placeId === '' ? null : loc.placeId
+          }
+          if (loc.currentActivity !== undefined) patch.currentActivity = loc.currentActivity
+          if (loc.currentState !== undefined) patch.currentState = loc.currentState
+          return { characterId, patch }
+        }).filter((u): u is { characterId: string; patch: Record<string, unknown> } => u !== null && Object.keys(u.patch).length > 0)
+        if (updates.length === 0) {
+          return { text: JSON.stringify({ error: 'No valid location updates (need characterId and at least placeId, currentActivity, or currentState)' }), isError: true }
+        }
+        console.log(`${LOG_PREFIX} set_character_locations: count=${updates.length} ids=[${updates.map((u) => u.characterId).join(', ')}]`)
+        await context.updateCharacters(updates)
+        console.log(`${LOG_PREFIX} set_character_locations: saved OK (single source: Character view and Places view will show same data)`)
+        return { text: JSON.stringify({ ok: true, message: 'Character locations updated. No duplicates: each character is in exactly one place.', count: updates.length }) }
       }
       case 'narrated_story_update_place': {
         const placeId = args.placeId as string | undefined

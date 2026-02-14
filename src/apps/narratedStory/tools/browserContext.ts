@@ -36,6 +36,8 @@ function applyCharacterPatch(char: Personaje, patch: Record<string, unknown>): P
           if (typeof obj[k] === 'string') next.feelingsToward![k] = obj[k] as string
         }
       }
+    } else if (key === 'currentPlaceId' && (v === null || v === '')) {
+      next.currentPlaceId = undefined
     } else if (typeof v === 'string') {
       ;(next as Record<string, unknown>)[key] = v
     }
@@ -54,6 +56,7 @@ function getSaveOpts(current: PartidaRecord) {
     selectedHeroineIds: current.selectedHeroineIds,
     placeAdditionalInfo: current.placeAdditionalInfo,
     places: current.places,
+    turnNumber: current.turnNumber,
   }
 }
 

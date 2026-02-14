@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import type { ComponentType } from 'react'
-import type { Personaje, PlayerProfile } from '../types'
+import type { Personaje, PlayerProfile, Place } from '../types'
 import type { NarratedStoryKey } from '../locales/keys'
 import { useNarratedStoryTranslation } from '../i18n'
 import { GiHearts, GiMuscleUp, GiRunningShoe, GiBrain, GiSpeaker } from '@/theme/icons'
 
 interface CharactersViewProps {
   characters: Personaje[]
+  places?: Place[]
   getGeneralImage?: (generalId: string) => string | null
   playerProfile?: PlayerProfile | null
 }
@@ -103,6 +104,12 @@ function RelationMeter({
   )
 }
 
+function getPlaceName(placeId: string | undefined, places: Place[]): string {
+  if (!placeId) return ''
+  const place = places.find((p) => p.id === placeId)
+  return place?.name ?? placeId
+}
+
 function CharacterDetailModal({
   character,
   imageUrl,
@@ -110,6 +117,7 @@ function CharacterDetailModal({
   t,
   playerProfile,
   allCharacters,
+  places = [],
 }: {
   character: Personaje
   imageUrl: string | null
@@ -117,10 +125,17 @@ function CharacterDetailModal({
   t: (key: NarratedStoryKey, vars?: Record<string, string | number>) => string
   playerProfile?: PlayerProfile | null
   allCharacters?: Personaje[]
+  places?: Place[]
 }) {
   const isPlayer = character.role === 'player'
   const showSexualData = isPlayer && playerProfile
   const nameById = new Map((allCharacters ?? []).map((c) => [c.id, c.name]))
+  const hasSituation =
+    character.currentPlaceId ||
+    character.currentActivity ||
+    character.currentState ||
+    character.sexCount != null ||
+    (character.developedKinks && character.developedKinks.length > 0)
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -170,6 +185,55 @@ function CharacterDetailModal({
           <p className="ns-char-role-badge ns-char-role-badge--strong" aria-label={t(`narratedStory.character.role.${character.role}` as NarratedStoryKey)}>
             {t(`narratedStory.character.role.${character.role}` as NarratedStoryKey)}
           </p>
+          {hasSituation && (
+            <div className="ns-char-modal-situation" aria-labelledby="ns-char-situation-heading">
+              <h3 id="ns-char-situation-heading" className="ns-char-description-title">
+                {t('narratedStory.character.currentSituation' as NarratedStoryKey)}
+              </h3>
+              <dl className="ns-char-situation-dl">
+                {(character.currentPlaceId || character.currentActivity || character.currentState) && (
+                  <>
+                    {character.currentPlaceId && (
+                      <>
+                        <dt>{t('narratedStory.places.characterLocation' as NarratedStoryKey)}</dt>
+                        <dd>{getPlaceName(character.currentPlaceId, places) || character.currentPlaceId}</dd>
+                      </>
+                    )}
+                    {character.currentActivity && (
+                      <>
+                        <dt>{t('narratedStory.places.currentActivity' as NarratedStoryKey)}</dt>
+                        <dd>{character.currentActivity}</dd>
+                      </>
+                    )}
+                    {character.currentState && (
+                      <>
+                        <dt>{t('narratedStory.places.currentState' as NarratedStoryKey)}</dt>
+                        <dd>{character.currentState}</dd>
+                      </>
+                    )}
+                  </>
+                )}
+                {character.sexCount != null && (
+                  <>
+                    <dt>{t('narratedStory.character.sexCount' as NarratedStoryKey)}</dt>
+                    <dd>{character.sexCount}</dd>
+                  </>
+                )}
+                {character.developedKinks && character.developedKinks.length > 0 && (
+                  <>
+                    <dt>{t('narratedStory.character.developedKinks' as NarratedStoryKey)}</dt>
+                    <dd>
+                      <ul className="ns-char-kinks-list">
+                        {character.developedKinks.map((k) => (
+                          <li key={k}>{k}</li>
+                        ))}
+                      </ul>
+                    </dd>
+                  </>
+                )}
+              </dl>
+            </div>
+          )}
           <div className="ns-char-modal-stats">
             {STAT_KEYS.map((key) => (
               <StatRow
@@ -300,6 +364,11 @@ function CharacterCard({
             <p className="ns-char-role-badge ns-char-role-badge--strong" aria-label={t(`narratedStory.character.role.${character.role}`)}>
               {t(`narratedStory.character.role.${character.role}`)}
             </p>
+            {(character.currentActivity || character.currentState) && (
+              <p className="ns-char-card-situation" aria-label={t('narratedStory.character.currentSituation' as NarratedStoryKey)}>
+                {[character.currentActivity, character.currentState].filter(Boolean).join(' · ')}
+              </p>
+            )}
             <div className="ns-char-stats ns-char-stats--compact">
               {STAT_KEYS.map((key) => (
                 <StatRow
@@ -342,11 +411,19 @@ function CharacterCard({
 
 export const CharactersView: ComponentType<CharactersViewProps> = ({
   characters,
+  places = [],
   getGeneralImage,
   playerProfile,
 }) => {
   const { t } = useNarratedStoryTranslation()
   const [selectedCharacter, setSelectedCharacter] = useState<Personaje | null>(null)
+
+  // Keep modal in sync with latest character data when list updates (e.g. after AI tool updates).
+  useEffect(() => {
+    if (!selectedCharacter) return
+    const updated = characters.find((c) => c.id === selectedCharacter.id)
+    if (updated && updated !== selectedCharacter) setSelectedCharacter(updated)
+  }, [characters, selectedCharacter])
 
   const selectedImageUrl =
     selectedCharacter &&
@@ -383,6 +460,7 @@ export const CharactersView: ComponentType<CharactersViewProps> = ({
             t={t}
             playerProfile={playerProfile}
             allCharacters={characters}
+            places={places ?? []}
           />,
           document.body
         )}
