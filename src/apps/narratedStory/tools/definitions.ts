@@ -9,7 +9,7 @@ export interface NarrativeToolDefinition {
   parameters?: Record<string, { type: string; description?: string }>
 }
 
-/** Tools: leer estado, crear entidades en bloque, aplicar actualizaciones en bloque. */
+/** Tools: get_state, create, apply_updates (normal turns only; intro uses narrative-only flow). */
 export const NARRATED_STORY_TOOL_DEFINITIONS: NarrativeToolDefinition[] = [
   {
     name: 'narrated_story_get_state',
@@ -63,9 +63,9 @@ export const NARRATED_STORY_TOOL_ORDER: string[] = [
   'narrated_story_apply_updates',
 ]
 
-export function sortToolCallsByCanonicalOrder(
-  calls: Array<{ name: string; args: Record<string, unknown> }>
-): Array<{ name: string; args: Record<string, unknown> }> {
+export function sortToolCallsByCanonicalOrder<T extends { name: string; args: Record<string, unknown> }>(
+  calls: T[]
+): T[] {
   const order = NARRATED_STORY_TOOL_ORDER
   const indexOf = (name: string) => {
     const i = order.indexOf(name)

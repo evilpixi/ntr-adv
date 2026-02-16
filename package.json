@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "NTR Adventure - shell React con menú principal y apps (Phaser opcional por app)",
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -11,7 +12,10 @@
     "mcp": "tsx mcp-server/index.ts",
     "cap:init": "capacitor init",
     "cap:add:android": "capacitor add android",
-    "cap:add:ios": "capacitor add ios"
+    "cap:add:ios": "capacitor add ios",
+    "build:electron": "tsc -b && cross-env BUILD_ELECTRON=1 vite build",
+    "export:win": "node scripts/export-win.js",
+    "electron:build": "npm run build:electron && electron-builder --win"
   },
   "dependencies": {
     "@capacitor/core": "^6.1.2",
@@ -33,7 +37,10 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
+    "cross-env": "^7.0.3",
     "dotenv": "^16.3.1",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
     "tsx": "^4.19.2",
     "typescript": "~5.6.2",
     "vite": "^5.4.10",
@@ -47,5 +54,20 @@
     "phaser"
   ],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "build": {
+    "appId": "com.ntr-adv.app",
+    "productName": "NTR Adventure",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "target": "portable",
+      "icon": null
+    }
+  }
 }

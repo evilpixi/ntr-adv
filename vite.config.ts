@@ -37,7 +37,9 @@ export default defineConfig(({ mode }) => {
 
   console.log('[Vite .env] __ENV_FALLBACK__ summary: deepseekApiKey length=', envFallback.deepseekApiKey.length, '| defaultService=', envFallback.defaultService, '| openaiApiKey length=', envFallback.openaiApiKey.length)
 
+  const buildForElectron = process.env.BUILD_ELECTRON === '1'
   return {
+    base: buildForElectron ? './' : '/',
     plugins: [react()],
     define: {
       __ENV_FALLBACK__: JSON.stringify(envFallback),

@@ -26,6 +26,8 @@ export const NARRATED_STORY_KEYS = [
   'narratedStory.chat.sentMessages',
   'narratedStory.chat.sentMessagesEmpty',
   'narratedStory.chat.aiTyping',
+  'narratedStory.chat.resend',
+  'narratedStory.chat.resendConfirm',
   'narratedStory.story.createIntro',
   'narratedStory.story.createIntroLoading',
   'narratedStory.story.noIntroYet',

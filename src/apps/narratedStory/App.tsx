@@ -3,19 +3,17 @@ import type { ComponentType } from 'react'
 import { GiScrollQuill, GiBookmarklet, GiNotebook, GiPerson, GiScrollUnfurled, GiCardRandom, GiCastle } from '@/theme/icons'
 import { getGeneralImage, useGameData } from '@/data/gameData'
 import { useNarratedStoryTranslation } from './i18n'
-import { initialNarratedStoryData, buildPlayerFromProfile, heroines, placesOfInterest, migrateCharacters } from './sampleData'
-import { getCurrentPartida, savePartida, type SavedMessage } from './saveGameDb'
+import { initialNarratedStoryData, buildPlayerFromProfile, heroines, placesOfInterest } from './sampleData'
+import { getCurrentPartida } from './saveGameDb'
 import { DEFAULT_SYSTEM_PROMPT } from './defaultSystemPrompt'
 import { DEFAULT_STORY_PROMPT } from './defaultStoryPrompt'
 import { DEFAULT_KINKS_PROMPT } from './defaultKinksPrompt'
 import { DEFAULT_EXTRA_INDICATIONS } from './defaultExtraIndications'
-import { loadAiSettings } from '@/store/aiSettings'
-import { runNextTurn, type TurnMessage } from './runNextTurn'
-import { realAIProvider } from './aiProviderApi'
-import { runLangGraphTurn } from './langgraphTurn'
+import { useNarratedStoryStore, narratedStoryStore, initPersistence } from './store'
+import { runIntroTurn, runStoryTurn } from './flow'
 import { StoryChat, CharactersView, PlacesView, PlayerLauncher, StoryPromptStep } from './components'
 import type { NarratedStoryKey } from './locales/keys'
-import type { ChatMessage, Personaje, PlayerProfile, Place } from './types'
+import type { ChatMessage, Personaje, PlayerProfile } from './types'
 import './narratedStory.css'
 
 type TabId = 'info' | 'story' | 'notes' | 'characters' | 'places' | 'config'
@@ -29,23 +27,7 @@ const TABS: { id: TabId; icon: ComponentType<{ className?: string; 'aria-hidden'
   { id: 'config', icon: GiCardRandom },
 ]
 
-function nextId(): string {
-  return `msg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
-}
-
-const INTRO_USER_MESSAGE =
-  'Begin the story. Write the opening scene (2–3 paragraphs) and end with *What do you do?*'
-
-/** Proveedor de IA: por defecto el real (backend). Cambiar a mockAIProvider para pruebas sin API. */
-const AI_PROVIDER = realAIProvider
-
-/**
- * App con chat: mensajes del usuario (texto) y de la app (Markdown).
- * Editor multilínea abajo + lista desplegable de mensajes enviados.
- */
-type TFunc = (key: NarratedStoryKey, vars?: Record<string, string | number>) => string
-
-const getLabelHelpers = (t: TFunc) => ({
+const getLabelHelpers = (t: (key: NarratedStoryKey, vars?: Record<string, string | number>) => string) => ({
   getGoverningStyleLabel: (s: PlayerProfile['governingStyle']) =>
     t(`narratedStory.launcher.governingStyle.${s}` as NarratedStoryKey),
   getGenderLabel: (g: PlayerProfile['gender']) =>
@@ -62,7 +44,6 @@ const getLabelHelpers = (t: TFunc) => ({
     t(`narratedStory.launcher.bustSize.${b}` as NarratedStoryKey),
 })
 
-/** Fallback URL cuando gameData aún no tiene la imagen. Mismo formato que los generales (.png). */
 const getGeneralImageOrFallback = (generalId: string): string | null => {
   const fromData = getGeneralImage(generalId)
   if (fromData) return fromData
@@ -71,156 +52,67 @@ const getGeneralImageOrFallback = (generalId: string): string | null => {
 
 const NarratedStoryApp: ComponentType<{ appId: string }> = () => {
   const { t, language } = useNarratedStoryTranslation()
-  useGameData() // carga game data para que getGeneralImage tenga imágenes
-  const [loading, setLoading] = useState(true)
-  const [playerProfile, setPlayerProfile] = useState<PlayerProfile | null>(null)
-  /** Personajes desde partida guardada; si es null se derivan del perfil + heroines. */
-  const [charactersOverride, setCharactersOverride] = useState<Personaje[] | null>(null)
+  useGameData()
+
+  const state = useNarratedStoryStore()
   const [activeTab, setActiveTab] = useState<TabId>('story')
-  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
-  const [sentMessages, setSentMessages] = useState<string[]>([])
   const [sentDropdownOpen, setSentDropdownOpen] = useState(false)
-  const [systemPrompt, setSystemPrompt] = useState('')
-  const [storyPrompt, setStoryPrompt] = useState('')
-  const [kinksPrompt, setKinksPrompt] = useState('')
-  const [extraIndications, setExtraIndications] = useState('')
-  /** Ids de heroínas elegidas para la aventura (por defecto todas). */
-  const [selectedHeroineIds, setSelectedHeroineIds] = useState<string[]>(() => heroines.map((h) => h.id))
-  /** Info adicional por lugar (para la IA o el usuario). */
-  const [placeAdditionalInfo, setPlaceAdditionalInfo] = useState<Record<string, string>>({})
-  /** Lugares de la partida (la IA puede crear/actualizar; si no hay partida cargada se usan los por defecto). */
-  const [places, setPlaces] = useState<Place[]>(placesOfInterest)
-  /** Número de turno actual (1-based). Se guarda con la partida y se incrementa al completar cada turno. */
-  const [turnNumber, setTurnNumber] = useState(1)
-  /** Tras el launcher, perfil pendiente hasta que el usuario confirme el prompt de historia. */
   const [pendingProfileAfterLauncher, setPendingProfileAfterLauncher] = useState<PlayerProfile | null>(null)
   const [creatingIntro, setCreatingIntro] = useState(false)
   const [responding, setResponding] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const labels = getLabelHelpers(t)
-  const selectedHeroines = heroines.filter((h) => selectedHeroineIds.includes(h.id))
-  const derivedCharacters: Personaje[] = playerProfile
+  const selectedHeroines = heroines.filter((h) => state.selectedHeroineIds.includes(h.id))
+  const derivedCharacters: Personaje[] = state.playerProfile
     ? [
-        buildPlayerFromProfile(playerProfile, labels),
+        buildPlayerFromProfile(state.playerProfile, labels),
         ...selectedHeroines,
       ]
     : initialNarratedStoryData.characters
-  const characters = charactersOverride ?? derivedCharacters
+  const characters = state.playerProfile ? state.characters : derivedCharacters
+  const messages: ChatMessage[] = state.messages.map((m) => ({
+    id: m.id,
+    role: m.role as ChatMessage['role'],
+    content: m.content,
+    ...(m.events != null && { events: m.events }),
+    ...(m.turnSummary != null && { turnSummary: m.turnSummary }),
+  }))
 
-  /** Si hay partida guardada = juego iniciado: cargar y mostrar juego; si no, mostrar launcher. */
   useEffect(() => {
+    initPersistence()
     getCurrentPartida()
       .then((partida) => {
         if (partida) {
-          setPlayerProfile(partida.playerProfile)
-          setCharactersOverride(migrateCharacters(partida.characters))
-          setMessages(
-            (partida.messages ?? []).map((m) => ({
-              id: m.id,
-              role: m.role as ChatMessage['role'],
-              content: m.content,
-              ...(m.events != null && { events: m.events }),
-              ...(m.turnSummary != null && { turnSummary: m.turnSummary }),
-            }))
-          )
-          setSentMessages(partida.sentMessages ?? [])
-          setSystemPrompt(partida.systemPrompt ?? '')
-          setStoryPrompt(partida.storyPrompt ?? '')
-          setKinksPrompt(partida.kinksPrompt ?? '')
-          setExtraIndications(partida.extraIndications ?? '')
-          setSelectedHeroineIds(
-            (partida.selectedHeroineIds ?? heroines.map((h) => h.id)).map((id) => (id === 'frost' ? 'zara' : id))
-          )
-          setPlaceAdditionalInfo(partida.placeAdditionalInfo ?? {})
-          setPlaces(partida.places ?? placesOfInterest)
-          setTurnNumber(partida.turnNumber ?? 1)
+          narratedStoryStore.dispatch({ type: 'LOAD_PARTIDA', payload: partida })
+        } else {
+          narratedStoryStore.dispatch({ type: 'UPDATE', payload: { loading: false } })
         }
       })
-      .finally(() => setLoading(false))
+      .catch(() => narratedStoryStore.dispatch({ type: 'UPDATE', payload: { loading: false } }))
   }, [])
-
-  /** Auto-guardado cuando cambian datos de la partida (solo si hay juego iniciado). */
-  useEffect(() => {
-    if (loading || !playerProfile) return
-    const savedMessages: SavedMessage[] = messages.map((m) => ({
-      id: m.id,
-      role: m.role,
-      content: m.content,
-      ...(m.events != null && { events: m.events }),
-      ...(m.turnSummary != null && { turnSummary: m.turnSummary }),
-    }))
-    savePartida(playerProfile, characters, {
-      messages: savedMessages,
-      sentMessages,
-      systemPrompt,
-      storyPrompt,
-      kinksPrompt,
-      extraIndications,
-      selectedHeroineIds,
-      placeAdditionalInfo,
-      places,
-      turnNumber,
-    }).catch(console.error)
-  }, [loading, playerProfile, characters, messages, sentMessages, systemPrompt, storyPrompt, kinksPrompt, extraIndications, selectedHeroineIds, placeAdditionalInfo, places, turnNumber])
 
   const handleSend = () => {
     const text = input.trim()
     if (!text || responding) return
-
-    const userMsg: ChatMessage = { id: nextId(), role: 'user', content: text }
-    setMessages((prev) => [...prev, userMsg])
-    setSentMessages((prev) => [...prev, text])
     setInput('')
     setResponding(true)
-
-    const turnMessages: TurnMessage[] = [...messages, userMsg].map((m) => ({
-      id: m.id,
-      role: m.role,
-      content: m.content,
-    }))
-    const turnParams = {
-      userMessage: text,
-      playerProfile: playerProfile!,
-      characters,
-      messages: turnMessages,
-      places,
-      systemPrompt,
-      storyPrompt,
-      kinksPrompt,
-      extraIndications,
-      maxMessages: 50,
-      language,
-      turnNumber,
-    }
-    const runTurn =
-      loadAiSettings().service.toLowerCase() === 'ollama'
-        ? () => runNextTurn(turnParams, AI_PROVIDER)
-        : () => runLangGraphTurn(turnParams)
-    runTurn()
-      .then(({ narrative, events, turnSummary, characters: nextCharacters, places: nextPlaces }) => {
-        const appReply: ChatMessage = {
-          id: nextId(),
-          role: 'app',
-          content: narrative,
-          events: events.length > 0 ? events : undefined,
-          turnSummary: turnSummary || undefined,
-        }
-        setMessages((prev) => [...prev, appReply])
-        setCharactersOverride(nextCharacters)
-        setPlaces(nextPlaces)
-        setTurnNumber((n) => n + 1)
-        console.log('[Narrated Story] UI updated: characters=', nextCharacters.length, 'places=', nextPlaces.length)
-      })
+    runStoryTurn({ userMessage: text, language })
+      .then(() => {})
       .catch((err) => {
-        console.error('Next turn error:', err)
+        console.error('Story turn error:', err)
         const fallback: ChatMessage = {
-          id: nextId(),
+          id: `msg-${Date.now()}`,
           role: 'app',
           content: '*Something went wrong. Please try again.*',
         }
-        setMessages((prev) => [...prev, fallback])
+        narratedStoryStore.dispatch({
+          type: 'UPDATE',
+          payload: {
+            messages: [...narratedStoryStore.getState().messages, fallback],
+          },
+        })
       })
       .finally(() => setResponding(false))
   }
@@ -231,43 +123,53 @@ const NarratedStoryApp: ComponentType<{ appId: string }> = () => {
     textareaRef.current?.focus()
   }
 
-  const handleCreateIntro = () => {
-    if (!playerProfile) return
-    setCreatingIntro(true)
-    const introTurnMessages: TurnMessage[] = [{ id: 'intro', role: 'user', content: INTRO_USER_MESSAGE }]
-    const introParams = {
-      userMessage: INTRO_USER_MESSAGE,
-      playerProfile,
-      characters,
-      messages: introTurnMessages,
-      places,
-      systemPrompt,
-      storyPrompt,
-      kinksPrompt,
-      extraIndications,
-      maxMessages: 0,
-      language,
-      turnNumber: 0,
-    }
-    const runIntro =
-      loadAiSettings().service.toLowerCase() === 'ollama'
-        ? () => runNextTurn(introParams, AI_PROVIDER)
-        : () => runLangGraphTurn(introParams)
-    runIntro()
-      .then((result) => {
-        const appMsg: ChatMessage = { id: nextId(), role: 'app', content: result.narrative }
-        setMessages([appMsg])
-        setCharactersOverride(result.characters)
-        setPlaces(result.places)
+  const handleResend = (message: { id: string; content: string }) => {
+    const msgs = narratedStoryStore.getState().messages
+    const idx = msgs.findIndex((m) => m.id === message.id)
+    if (idx === -1 || msgs[idx].role !== 'user') return
+    if (!window.confirm(t('narratedStory.chat.resendConfirm' as NarratedStoryKey))) return
+    const truncated = msgs.slice(0, idx)
+    const userCount = truncated.filter((m) => m.role === 'user').length
+    const sentMessages = narratedStoryStore.getState().sentMessages.slice(0, userCount)
+    const turnNumber = truncated.filter((m) => m.role === 'app').length + 1
+    narratedStoryStore.dispatch({
+      type: 'UPDATE',
+      payload: { messages: truncated, sentMessages, turnNumber },
+    })
+    setResponding(true)
+    runStoryTurn({ userMessage: message.content, language })
+      .catch((err) => {
+        console.error('Story turn error (resend):', err)
+        const fallback: ChatMessage = {
+          id: `msg-${Date.now()}`,
+          role: 'app',
+          content: '*Something went wrong. Please try again.*',
+        }
+        narratedStoryStore.dispatch({
+          type: 'UPDATE',
+          payload: {
+            messages: [...narratedStoryStore.getState().messages, fallback],
+          },
+        })
       })
+      .finally(() => setResponding(false))
+  }
+
+  const handleCreateIntro = () => {
+    if (!state.playerProfile) return
+    setCreatingIntro(true)
+    runIntroTurn({ language })
       .catch((err) => {
         console.error('Create intro error:', err)
         const fallback: ChatMessage = {
-          id: nextId(),
+          id: `msg-${Date.now()}`,
           role: 'app',
           content: `*Could not generate intro: ${err.message}. Check API key and that the server is running.*`,
         }
-        setMessages([fallback])
+        narratedStoryStore.dispatch({
+          type: 'UPDATE',
+          payload: { messages: [fallback] },
+        })
       })
       .finally(() => setCreatingIntro(false))
   }
@@ -292,39 +194,49 @@ const NarratedStoryApp: ComponentType<{ appId: string }> = () => {
       buildPlayerFromProfile(profile, labels),
       ...heroines,
     ]
-    savePartida(profile, initialCharacters, {
-      messages: [],
-      sentMessages: [],
-      systemPrompt: values.systemPrompt,
-      storyPrompt: values.storyPrompt,
-      kinksPrompt: values.kinksPrompt,
-      extraIndications: values.extraIndications,
-      selectedHeroineIds: heroines.map((h) => h.id),
-      places: placesOfInterest,
-      turnNumber: 1,
-    }).catch(console.error)
-    setPlayerProfile(profile)
-    setCharactersOverride(initialCharacters)
-    setPlaces(placesOfInterest)
-    setSystemPrompt(values.systemPrompt)
-    setStoryPrompt(values.storyPrompt)
-    setKinksPrompt(values.kinksPrompt)
-    setExtraIndications(values.extraIndications)
-    setSelectedHeroineIds(heroines.map((h) => h.id))
-    setTurnNumber(1)
+    narratedStoryStore.dispatch({
+      type: 'UPDATE',
+      payload: {
+        playerProfile: profile,
+        characters: initialCharacters,
+        messages: [],
+        sentMessages: [],
+        systemPrompt: values.systemPrompt,
+        storyPrompt: values.storyPrompt,
+        kinksPrompt: values.kinksPrompt,
+        extraIndications: values.extraIndications,
+        selectedHeroineIds: heroines.map((h) => h.id),
+        places: placesOfInterest,
+        placeAdditionalInfo: {},
+        turnNumber: 1,
+        loading: false,
+      },
+    })
     setPendingProfileAfterLauncher(null)
   }
 
   const handleHeroineToggle = (heroineId: string, checked: boolean) => {
     const next = checked
-      ? [...selectedHeroineIds, heroineId]
-      : selectedHeroineIds.filter((id) => id !== heroineId)
-    setSelectedHeroineIds(next)
-    const playerChar = characters.find((c) => c.role === 'player') ?? buildPlayerFromProfile(playerProfile!, labels)
-    setCharactersOverride([playerChar, ...heroines.filter((h) => next.includes(h.id))])
+      ? [...state.selectedHeroineIds, heroineId]
+      : state.selectedHeroineIds.filter((id) => id !== heroineId)
+    const playerChar =
+      state.characters.find((c) => c.role === 'player') ??
+      (state.playerProfile ? buildPlayerFromProfile(state.playerProfile, labels) : initialNarratedStoryData.characters[0])
+    const newCharacters: Personaje[] = [
+      playerChar as Personaje,
+      ...heroines.filter((h) => next.includes(h.id)),
+    ]
+    narratedStoryStore.dispatch({
+      type: 'UPDATE',
+      payload: { selectedHeroineIds: next, characters: newCharacters },
+    })
   }
 
-  if (loading) {
+  const handleUpdatePrompt = (field: 'systemPrompt' | 'storyPrompt' | 'kinksPrompt' | 'extraIndications', value: string) => {
+    narratedStoryStore.dispatch({ type: 'UPDATE', payload: { [field]: value } })
+  }
+
+  if (state.loading) {
     return (
       <div className="narrated-story-layout" aria-busy="true" aria-live="polite">
         <p className="narrated-story-welcome">{t('narratedStory.loading')}</p>
@@ -343,7 +255,7 @@ const NarratedStoryApp: ComponentType<{ appId: string }> = () => {
       />
     )
   }
-  if (playerProfile === null) {
+  if (state.playerProfile === null) {
     return <PlayerLauncher onComplete={handleLauncherComplete} />
   }
 
@@ -383,7 +295,7 @@ const NarratedStoryApp: ComponentType<{ appId: string }> = () => {
             messages={messages}
             input={input}
             onInputChange={setInput}
-            sentMessages={sentMessages}
+            sentMessages={state.sentMessages}
             sentDropdownOpen={sentDropdownOpen}
             onToggleSentDropdown={() => setSentDropdownOpen((o) => !o)}
             onSelectSentMessage={handleSelectSentMessage}
@@ -391,6 +303,7 @@ const NarratedStoryApp: ComponentType<{ appId: string }> = () => {
             responding={responding}
             onCreateIntro={handleCreateIntro}
             onSend={handleSend}
+            onResend={handleResend}
             textareaRef={textareaRef}
           />
         )}
@@ -411,8 +324,8 @@ const NarratedStoryApp: ComponentType<{ appId: string }> = () => {
               <p className="ns-system-prompt-hint">{t('narratedStory.systemPrompt.hint')}</p>
               <textarea
                 className="ns-system-prompt-input"
-                value={systemPrompt}
-                onChange={(e) => setSystemPrompt(e.target.value)}
+                value={state.systemPrompt}
+                onChange={(e) => handleUpdatePrompt('systemPrompt', e.target.value)}
                 placeholder={t('narratedStory.systemPrompt.placeholder')}
                 rows={8}
                 aria-label={t('narratedStory.systemPrompt.placeholder')}
@@ -423,8 +336,8 @@ const NarratedStoryApp: ComponentType<{ appId: string }> = () => {
                 </h4>
                 <textarea
                   className="ns-system-prompt-input ns-system-prompt-input--short"
-                  value={storyPrompt}
-                  onChange={(e) => setStoryPrompt(e.target.value)}
+                  value={state.storyPrompt}
+                  onChange={(e) => handleUpdatePrompt('storyPrompt', e.target.value)}
                   placeholder={t('narratedStory.prompts.storyPromptPlaceholder')}
                   rows={4}
                   aria-label={t('narratedStory.prompts.storyPromptLabel')}
@@ -436,8 +349,8 @@ const NarratedStoryApp: ComponentType<{ appId: string }> = () => {
                 </h4>
                 <textarea
                   className="ns-system-prompt-input ns-system-prompt-input--short"
-                  value={kinksPrompt}
-                  onChange={(e) => setKinksPrompt(e.target.value)}
+                  value={state.kinksPrompt}
+                  onChange={(e) => handleUpdatePrompt('kinksPrompt', e.target.value)}
                   placeholder={t('narratedStory.prompts.kinksPlaceholder')}
                   rows={2}
                   aria-label={t('narratedStory.prompts.kinksLabel')}
@@ -449,8 +362,8 @@ const NarratedStoryApp: ComponentType<{ appId: string }> = () => {
                 </h4>
                 <textarea
                   className="ns-system-prompt-input ns-system-prompt-input--short"
-                  value={extraIndications}
-                  onChange={(e) => setExtraIndications(e.target.value)}
+                  value={state.extraIndications}
+                  onChange={(e) => handleUpdatePrompt('extraIndications', e.target.value)}
                   placeholder={t('narratedStory.prompts.extraIndicationsPlaceholder')}
                   rows={2}
                   aria-label={t('narratedStory.prompts.extraIndicationsLabel')}
@@ -468,17 +381,17 @@ const NarratedStoryApp: ComponentType<{ appId: string }> = () => {
         {activeTab === 'characters' && (
           <CharactersView
             characters={characters}
-            places={places}
+            places={state.places}
             getGeneralImage={getGeneralImageOrFallback}
-            playerProfile={playerProfile}
+            playerProfile={state.playerProfile}
           />
         )}
         {activeTab === 'places' && (
           <PlacesView
-            places={places}
+            places={state.places}
             characters={characters}
             getGeneralImage={getGeneralImageOrFallback}
-            placeAdditionalInfo={placeAdditionalInfo}
+            placeAdditionalInfo={state.placeAdditionalInfo}
           />
         )}
         {activeTab === 'config' && (
@@ -499,7 +412,7 @@ const NarratedStoryApp: ComponentType<{ appId: string }> = () => {
                     <label className="ns-config-heroine-label">
                       <input
                         type="checkbox"
-                        checked={selectedHeroineIds.includes(h.id)}
+                        checked={state.selectedHeroineIds.includes(h.id)}
                         onChange={(e) => handleHeroineToggle(h.id, e.target.checked)}
                         className="ns-config-heroine-checkbox"
                       />

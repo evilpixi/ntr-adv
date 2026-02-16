@@ -1,14 +1,12 @@
 /**
- * Contexto de tools de Narrated Story para el navegador: solo partida y stats.
- * Implementa NarratedStoryToolContext usando saveGameDb (IndexedDB).
- * Para tools narrativas usar runNarratedStoryTool. No incluye tools generales (ntr_*, cardgame_*).
+ * Tool context for Narrated Story in the browser. Reads and writes via the global store (single source of truth).
+ * Persistence to IndexedDB is handled by the store layer.
  */
-import { getCurrentPartida, savePartida, type PartidaRecord } from '../saveGameDb'
+import { narratedStoryStore } from '../store'
 import { placesOfInterest } from '../sampleData'
 import type { Personaje, Place } from '../types'
 import type { NarratedStoryToolContext } from './context'
 
-/** Campos que la IA puede actualizar en un personaje (no id, name, role, etc.). */
 const CHARACTER_PATCH_KEYS = [
   'hp', 'fuerza', 'agilidad', 'inteligencia', 'carisma',
   'description', 'currentPlaceId', 'currentActivity', 'currentState',
@@ -45,22 +43,6 @@ function applyCharacterPatch(char: Personaje, patch: Record<string, unknown>): P
   return next
 }
 
-function getSaveOpts(current: PartidaRecord) {
-  return {
-    messages: current.messages,
-    sentMessages: current.sentMessages,
-    systemPrompt: current.systemPrompt,
-    storyPrompt: current.storyPrompt,
-    kinksPrompt: current.kinksPrompt,
-    extraIndications: current.extraIndications,
-    selectedHeroineIds: current.selectedHeroineIds,
-    placeAdditionalInfo: current.placeAdditionalInfo,
-    places: current.places,
-    turnNumber: current.turnNumber,
-  }
-}
-
-/** Construye un Personaje mínimo desde un objeto de la IA (id, name, role requeridos). */
 function characterFromPayload(data: Record<string, unknown>): Personaje {
   const id = String(data.id ?? '')
   const name = String(data.name ?? 'Unknown')
@@ -98,58 +80,58 @@ function characterFromPayload(data: Record<string, unknown>): Personaje {
   }
 }
 
-/** Crea el contexto de tools de partida/stats para la app Narrated Story en el navegador. */
+/** Creates the tool context that reads/writes the Narrated Story store. */
 export function createNarratedStoryBrowserContext(): NarratedStoryToolContext {
   return {
     async getPartida() {
-      const partida = await getCurrentPartida()
-      if (!partida) return null
+      const state = narratedStoryStore.getState()
+      if (!state.playerProfile) return null
       return {
-        playerProfile: partida.playerProfile as unknown as Record<string, unknown>,
-        characters: partida.characters.map((c) => ({ ...c } as Record<string, unknown>)),
-        places: partida.places,
-        placeAdditionalInfo: partida.placeAdditionalInfo,
+        playerProfile: state.playerProfile as unknown as Record<string, unknown>,
+        characters: state.characters.map((c) => ({ ...c } as Record<string, unknown>)),
+        places: state.places,
+        placeAdditionalInfo: state.placeAdditionalInfo,
       }
     },
     async updateCharacter(characterId: string, patch: Record<string, unknown>) {
-      const current = await getCurrentPartida()
-      if (!current) {
+      const state = narratedStoryStore.getState()
+      if (!state.playerProfile) {
         console.warn('[Narrated Story MCP] update_character: no partida loaded, skip')
         return
       }
-      const idx = current.characters.findIndex((c) => c.id === characterId)
+      const idx = state.characters.findIndex((c) => c.id === characterId)
       if (idx === -1) {
         console.warn('[Narrated Story MCP] update_character: character not found', characterId)
         return
       }
-      const updated = applyCharacterPatch(current.characters[idx], patch)
-      const characters = current.characters.slice()
+      const updated = applyCharacterPatch(state.characters[idx], patch)
+      const characters = state.characters.slice()
       characters[idx] = updated
-      await savePartida(current.playerProfile, characters, getSaveOpts(current))
-      console.log('[Narrated Story MCP] savePartida OK: characters=', characters.length)
+      narratedStoryStore.dispatch({ type: 'UPDATE', payload: { characters } })
+      console.log('[Narrated Story MCP] store updated: characters=', characters.length)
     },
     async updateCharacters(updates: Array<{ characterId: string; patch: Record<string, unknown> }>) {
-      const current = await getCurrentPartida()
-      if (!current) {
+      const state = narratedStoryStore.getState()
+      if (!state.playerProfile) {
         console.warn('[Narrated Story MCP] update_characters: no partida loaded, skip')
         return
       }
-      const byId = new Map(current.characters.map((c) => [c.id, c]))
+      const byId = new Map(state.characters.map((c) => [c.id, c]))
       for (const { characterId, patch } of updates) {
         const char = byId.get(characterId)
         if (char) byId.set(characterId, applyCharacterPatch(char, patch))
       }
       const characters = Array.from(byId.values())
-      await savePartida(current.playerProfile, characters, getSaveOpts(current))
-      console.log('[Narrated Story MCP] savePartida OK: characters=', characters.length)
+      narratedStoryStore.dispatch({ type: 'UPDATE', payload: { characters } })
+      console.log('[Narrated Story MCP] store updated: characters=', characters.length)
     },
     async updatePlace(placeId: string, patch: Record<string, unknown>) {
-      const current = await getCurrentPartida()
-      if (!current) {
+      const state = narratedStoryStore.getState()
+      if (!state.playerProfile) {
         console.warn('[Narrated Story MCP] update_place: no partida loaded, skip')
         return
       }
-      const places: Place[] = current.places ? [...current.places] : [...placesOfInterest]
+      const places: Place[] = state.places ? [...state.places] : [...placesOfInterest]
       const idx = places.findIndex((p) => p.id === placeId)
       if (idx === -1) {
         console.warn('[Narrated Story MCP] update_place: place not found', placeId)
@@ -158,42 +140,42 @@ export function createNarratedStoryBrowserContext(): NarratedStoryToolContext {
       const place = places[idx]
       if (typeof patch.name === 'string') place.name = patch.name
       if (typeof patch.description === 'string') place.description = patch.description
-      let placeAdditionalInfo = current.placeAdditionalInfo
+      let placeAdditionalInfo = state.placeAdditionalInfo
       if (typeof patch.additionalInfo === 'string') {
-        placeAdditionalInfo = { ...(current.placeAdditionalInfo ?? {}), [placeId]: patch.additionalInfo }
+        placeAdditionalInfo = { ...state.placeAdditionalInfo, [placeId]: patch.additionalInfo }
       }
-      await savePartida(current.playerProfile, current.characters, { ...getSaveOpts(current), placeAdditionalInfo, places })
-      console.log('[Narrated Story MCP] savePartida OK: places=', places.length)
+      narratedStoryStore.dispatch({ type: 'UPDATE', payload: { places, placeAdditionalInfo } })
+      console.log('[Narrated Story MCP] store updated: places=', places.length)
     },
     async createCharacter(character: Record<string, unknown>) {
-      const current = await getCurrentPartida()
-      if (!current) {
+      const state = narratedStoryStore.getState()
+      if (!state.playerProfile) {
         console.warn('[Narrated Story MCP] create_character: no partida loaded, skip')
         return
       }
       const newChar = characterFromPayload(character)
-      if (current.characters.some((c) => c.id === newChar.id)) {
+      if (state.characters.some((c) => c.id === newChar.id)) {
         console.warn('[Narrated Story MCP] create_character: id already exists', newChar.id)
         return
       }
-      const characters = [...current.characters, newChar]
-      await savePartida(current.playerProfile, characters, getSaveOpts(current))
-      console.log('[Narrated Story MCP] savePartida OK: characters=', characters.length, '(added', newChar.name + ')')
+      const characters = [...state.characters, newChar]
+      narratedStoryStore.dispatch({ type: 'UPDATE', payload: { characters } })
+      console.log('[Narrated Story MCP] store updated: characters=', characters.length, '(added', newChar.name + ')')
     },
     async createPlace(placeId: string, name: string, description?: string) {
-      const current = await getCurrentPartida()
-      if (!current) {
+      const state = narratedStoryStore.getState()
+      if (!state.playerProfile) {
         console.warn('[Narrated Story MCP] create_place: no partida loaded, skip')
         return
       }
-      const places: Place[] = current.places ? [...current.places] : [...placesOfInterest]
+      const places: Place[] = state.places ? [...state.places] : [...placesOfInterest]
       if (places.some((p) => p.id === placeId)) {
         console.warn('[Narrated Story MCP] create_place: placeId already exists', placeId)
         return
       }
       places.push({ id: placeId, name, description })
-      await savePartida(current.playerProfile, current.characters, { ...getSaveOpts(current), places })
-      console.log('[Narrated Story MCP] savePartida OK: places=', places.length, '(added', name + ')')
+      narratedStoryStore.dispatch({ type: 'UPDATE', payload: { places } })
+      console.log('[Narrated Story MCP] store updated: places=', places.length, '(added', name + ')')
     },
   }
 }

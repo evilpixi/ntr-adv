@@ -39,6 +39,8 @@ Desktop.ini
 # Build outputs
 dist/
 build/
+export/
+release/
 *.min.js
 *.min.css
 

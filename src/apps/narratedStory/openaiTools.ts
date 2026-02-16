@@ -1,6 +1,5 @@
 /**
- * Definición de tools en formato OpenAI para el chat de Narrated Story.
- * Tres tools: get_state, create (un payload), apply_updates (un payload).
+ * Tools for normal turns: get_state, create, apply_updates.
  */
 export const NARRATED_STORY_OPENAI_TOOLS = [
   {

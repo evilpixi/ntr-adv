@@ -29,6 +29,8 @@ export const en: Partial<Record<NarratedStoryKey, string>> = {
   'narratedStory.chat.sentMessages': 'Sent messages',
   'narratedStory.chat.sentMessagesEmpty': 'No messages sent yet.',
   'narratedStory.chat.aiTyping': 'AI is writing…',
+  'narratedStory.chat.resend': 'Resend',
+  'narratedStory.chat.resendConfirm': 'Remove this message and all later messages, then resend this one to get a new response. Continue?',
   'narratedStory.story.createIntro': 'Create intro',
   'narratedStory.story.createIntroLoading': 'Creating intro…',
   'narratedStory.story.noIntroYet': 'Create the intro to begin.',

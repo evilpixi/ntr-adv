@@ -2,6 +2,7 @@ import { useRef, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { GiScrollQuill } from '@/theme/icons'
 import { useNarratedStoryTranslation } from '../i18n'
+import type { NarratedStoryKey } from '../locales/keys'
 import type { ChatMessage } from '../types'
 
 export interface StoryChatProps {
@@ -16,6 +17,7 @@ export interface StoryChatProps {
   responding: boolean
   onCreateIntro: () => void
   onSend: () => void
+  onResend: (message: { id: string; content: string }) => void
   textareaRef: React.RefObject<HTMLTextAreaElement>
 }
 
@@ -31,6 +33,7 @@ export function StoryChat({
   responding,
   onCreateIntro,
   onSend,
+  onResend,
   textareaRef,
 }: StoryChatProps) {
   const { t } = useNarratedStoryTranslation()
@@ -87,8 +90,18 @@ export function StoryChat({
                 data-role={msg.role}
               >
                 {msg.role === 'user' ? (
-                  <div className="narrated-story-message-body narrated-story-message-body--text">
-                    {msg.content}
+                  <div className="narrated-story-message-body narrated-story-message-body--text narrated-story-message-body--user-wrap">
+                    <span className="narrated-story-message-user-text">{msg.content}</span>
+                    <button
+                      type="button"
+                      className="narrated-story-resend-btn"
+                      onClick={() => onResend({ id: msg.id, content: msg.content })}
+                      disabled={responding}
+                      aria-label={t('narratedStory.chat.resend' as NarratedStoryKey)}
+                      title={t('narratedStory.chat.resend' as NarratedStoryKey)}
+                    >
+                      {t('narratedStory.chat.resend' as NarratedStoryKey)}
+                    </button>
                   </div>
                 ) : (
                   <div className="narrated-story-message-body narrated-story-message-body--md">

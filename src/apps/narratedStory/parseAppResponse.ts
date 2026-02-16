@@ -9,6 +9,35 @@ import type { TurnEvent } from './types'
 const EVENTS_BLOCK = '```events'
 const TURN_SUMMARY_BLOCK = '```turn_summary'
 
+/** Regex: <|DSML| o <｜DSML｜ (pipe ASCII | o fullwidth ｜ U+FF5C). Algunos modelos (DeepSeek) lo insertan en texto. */
+const DSML_OPENING_RE = /<[\u007C\uFF5C]DSML[\u007C\uFF5C]/
+
+/** Marcadores adicionales de tool/function calls en texto. */
+const TOOL_LIKE_MARKERS = [
+  '```function_calls',
+  '```dsml',
+  '<function_calls>',
+  '</function_calls>',
+]
+
+/**
+ * Elimina de la narración cualquier bloque que parezca marcado de tool/DSML (el modelo a veces lo escribe en texto).
+ */
+export function stripToolLikeMarkup(text: string): string {
+  let out = text
+  const dsmlMatch = out.match(DSML_OPENING_RE)
+  if (dsmlMatch && dsmlMatch.index !== undefined) {
+    out = out.slice(0, dsmlMatch.index).trim()
+  }
+  for (const marker of TOOL_LIKE_MARKERS) {
+    const idx = out.indexOf(marker)
+    if (idx !== -1) {
+      out = out.slice(0, idx).trim()
+    }
+  }
+  return out
+}
+
 export interface ParsedAppResponse {
   /** Narrativa principal (markdown), sin los bloques especiales. */
   narrative: string
@@ -38,23 +67,25 @@ function extractBlock(raw: string, blockStart: string): string | null {
  * Parsea la respuesta completa de la IA y devuelve narrativa, eventos y resumen.
  */
 export function parseAppResponse(raw: string): ParsedAppResponse {
-  let narrative = raw.trim()
+  const rawTrimmed = raw.trim()
+  const withoutToolMarkup = stripToolLikeMarkup(rawTrimmed)
+  let narrative = withoutToolMarkup
   const events: TurnEvent[] = []
   let turnSummary = ''
 
-  const eventsBlockIdx = raw.indexOf(EVENTS_BLOCK)
-  const summaryBlockIdx = raw.indexOf(TURN_SUMMARY_BLOCK)
-  const summaryContent = extractBlock(raw, TURN_SUMMARY_BLOCK)
+  const eventsBlockIdx = withoutToolMarkup.indexOf(EVENTS_BLOCK)
+  const summaryBlockIdx = withoutToolMarkup.indexOf(TURN_SUMMARY_BLOCK)
+  const summaryContent = extractBlock(withoutToolMarkup, TURN_SUMMARY_BLOCK)
   if (summaryContent) turnSummary = summaryContent
 
   const firstBlockIdx = Math.min(
-    eventsBlockIdx === -1 ? raw.length : eventsBlockIdx,
-    summaryBlockIdx === -1 ? raw.length : summaryBlockIdx
+    eventsBlockIdx === -1 ? withoutToolMarkup.length : eventsBlockIdx,
+    summaryBlockIdx === -1 ? withoutToolMarkup.length : summaryBlockIdx
   )
-  narrative = raw.slice(0, firstBlockIdx).trim()
+  narrative = withoutToolMarkup.slice(0, firstBlockIdx).trim()
 
   if (eventsBlockIdx !== -1) {
-    const eventsContent = extractBlock(raw, EVENTS_BLOCK)
+    const eventsContent = extractBlock(withoutToolMarkup, EVENTS_BLOCK)
     if (eventsContent) {
       try {
         const parsed = JSON.parse(eventsContent) as unknown
