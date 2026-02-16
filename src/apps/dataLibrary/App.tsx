@@ -1,25 +1,25 @@
 import { useState } from 'react'
 import type { ComponentType } from 'react'
 import { useGameData } from '@/data/gameData'
+import { t } from '@/i18n'
+import { useApp } from '@/store/AppContext'
 import { TabsContent } from './TabsContent'
 import './dataLibrary.css'
 
 type TabId = 'kingdoms' | 'generals' | 'provinces'
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: 'kingdoms', label: 'Reinos' },
-  { id: 'generals', label: 'Generales' },
-  { id: 'provinces', label: 'Provincias' },
-]
+const TAB_IDS: TabId[] = ['kingdoms', 'generals', 'provinces']
 
 const DataLibraryApp: ComponentType<{ appId: string }> = () => {
+  const { settings } = useApp()
+  const lang = settings.language
   const { loaded, error } = useGameData()
   const [tab, setTab] = useState<TabId>('kingdoms')
 
   if (error) {
     return (
       <div className="data-library-container" style={{ padding: 'var(--space-lg)', color: 'var(--color-error)' }}>
-        Error al cargar los datos: {error.message}
+        {t('dataLibrary.loadError', lang)} {error.message}
       </div>
     )
   }
@@ -27,7 +27,7 @@ const DataLibraryApp: ComponentType<{ appId: string }> = () => {
   if (!loaded) {
     return (
       <div className="data-library-container" style={{ padding: 'var(--space-lg)', textAlign: 'center' }}>
-        Cargando datos…
+        {t('dataLibrary.loading', lang)}
       </div>
     )
   }
@@ -35,18 +35,18 @@ const DataLibraryApp: ComponentType<{ appId: string }> = () => {
   return (
     <div className="data-library-container">
       <header className="data-library-header">
-        <h1>Biblioteca de Datos</h1>
+        <h1>{t('dataLibrary.title', lang)}</h1>
       </header>
       <div className="data-library-tabs">
-        {TABS.map((t) => (
+        {TAB_IDS.map((tabId) => (
           <button
-            key={t.id}
+            key={tabId}
             type="button"
-            className={`data-library-tab ${tab === t.id ? 'active' : ''}`}
-            onClick={() => setTab(t.id)}
-            data-tab={t.id}
+            className={`data-library-tab ${tab === tabId ? 'active' : ''}`}
+            onClick={() => setTab(tabId)}
+            data-tab={tabId}
           >
-            {t.label}
+            {t(`dataLibrary.tab.${tabId}`, lang)}
           </button>
         ))}
       </div>

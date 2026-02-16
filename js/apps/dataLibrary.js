@@ -5,6 +5,7 @@
 
 import { gameData } from '../dataLoader.js';
 import { getKingdomImage, getGeneralImage, getProvinceImage } from '../config.js';
+import { t } from '../i18n-classic.js';
 
 class DataLibraryApp {
     constructor() {
@@ -30,14 +31,14 @@ class DataLibraryApp {
         // Agregar botón de volver
         const backButton = document.createElement('button');
         backButton.className = 'btn btn-secondary';
-        backButton.textContent = 'Volver al Inicio';
+        backButton.textContent = t('dataLibrary.backToStart');
         backButton.addEventListener('click', () => this.close());
         
         // Crear header
         const header = document.createElement('div');
         header.className = 'data-library-header';
         header.innerHTML = `
-            <h1>Biblioteca de Datos</h1>
+            <h1>${t('dataLibrary.title')}</h1>
         `;
         header.appendChild(backButton);
         
@@ -45,9 +46,9 @@ class DataLibraryApp {
         const tabsContainer = document.createElement('div');
         tabsContainer.className = 'data-library-tabs';
         tabsContainer.innerHTML = `
-            <button class="data-library-tab active" data-tab="kingdoms">Reinos</button>
-            <button class="data-library-tab" data-tab="generals">Generales</button>
-            <button class="data-library-tab" data-tab="provinces">Provincias</button>
+            <button class="data-library-tab active" data-tab="kingdoms">${t('dataLibrary.tab_kingdoms')}</button>
+            <button class="data-library-tab" data-tab="generals">${t('dataLibrary.tab_generals')}</button>
+            <button class="data-library-tab" data-tab="provinces">${t('dataLibrary.tab_provinces')}</button>
         `;
         
         // Crear contenido
@@ -120,7 +121,7 @@ class DataLibraryApp {
         const kingdoms = gameData.getKingdoms();
         
         if (kingdoms.length === 0) {
-            return '<p>No hay reinos disponibles.</p>';
+            return '<p>' + t('dataLibrary.noKingdoms') + '</p>';
         }
         
         let html = '<div class="data-library-grid">';
@@ -143,36 +144,36 @@ class DataLibraryApp {
                         </div>
                         ${kingdom.description ? `<p class="data-library-description">${kingdom.description}</p>` : ''}
                         <div class="data-library-stats">
-                            <div class="stat">
-                                <span class="stat-label">Generales:</span>
-                                <span class="stat-value">${generals.length}</span>
+                                <div class="stat">
+                                    <span class="stat-label">${t('dataLibrary.generalsLabel')}</span>
+                                    <span class="stat-value">${generals.length}</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">${t('dataLibrary.provincesLabel')}</span>
+                                    <span class="stat-value">${provinces.length}</span>
+                                </div>
                             </div>
-                            <div class="stat">
-                                <span class="stat-label">Provincias:</span>
-                                <span class="stat-value">${provinces.length}</span>
-                            </div>
-                        </div>
                         ${kingdom.architecturalStyle ? `
                             <div class="data-library-detail-section">
-                                <h4>Arquitectura</h4>
+                                <h4>${t('dataLibrary.architecture')}</h4>
                                 <p>${kingdom.architecturalStyle}</p>
                             </div>
                         ` : ''}
                         ${kingdom.biome ? `
                             <div class="data-library-detail-section">
-                                <h4>Bioma</h4>
+                                <h4>${t('dataLibrary.biome')}</h4>
                                 <p>${kingdom.biome}</p>
                             </div>
                         ` : ''}
                         ${kingdom.governmentType ? `
                             <div class="data-library-detail-section">
-                                <h4>Tipo de Gobierno</h4>
+                                <h4>${t('dataLibrary.governmentType')}</h4>
                                 <p>${kingdom.governmentType}</p>
                             </div>
                         ` : ''}
                         ${kingdom.socialDescription ? `
                             <div class="data-library-detail-section">
-                                <h4>Sociedad</h4>
+                                <h4>${t('dataLibrary.society')}</h4>
                                 <p>${kingdom.socialDescription}</p>
                             </div>
                         ` : ''}
@@ -192,7 +193,7 @@ class DataLibraryApp {
         const generals = gameData.getGenerals();
         
         if (generals.length === 0) {
-            return '<p>No hay generales disponibles.</p>';
+            return '<p>' + t('dataLibrary.noGenerals') + '</p>';
         }
         
         // Agrupar por reino
@@ -229,38 +230,38 @@ class DataLibraryApp {
                             ${general.description ? `<p class="data-library-description">${general.description}</p>` : ''}
                             <div class="data-library-stats">
                                 <div class="stat">
-                                    <span class="stat-label">HP:</span>
+                                    <span class="stat-label">${t('dataLibrary.hp')}</span>
                                     <span class="stat-value">${general.hp || 100}</span>
                                 </div>
                                 <div class="stat">
-                                    <span class="stat-label">Amor:</span>
+                                    <span class="stat-label">${t('dataLibrary.love')}</span>
                                     <span class="stat-value">${general.love || 50}</span>
                                 </div>
                                 <div class="stat">
-                                    <span class="stat-label">Fuerza:</span>
+                                    <span class="stat-label">${t('dataLibrary.strength')}</span>
                                     <span class="stat-value">${general.strength || 10}</span>
                                 </div>
                             </div>
                             ${general.personality ? `
                                 <div class="data-library-detail-section">
-                                    <h4>Personalidad</h4>
+                                    <h4>${t('dataLibrary.personality')}</h4>
                                     <p>${general.personality}</p>
                                 </div>
                             ` : ''}
                             ${general.physicalAppearance ? `
                                 <div class="data-library-detail-section">
-                                    <h4>Apariencia Física</h4>
+                                    <h4>${t('dataLibrary.physicalAppearance')}</h4>
                                     <p>${general.physicalAppearance}</p>
                                 </div>
                             ` : ''}
                             ${general.additionalData ? `
                                 <div class="data-library-detail-section">
-                                    <h4>Información Adicional</h4>
+                                    <h4>${t('dataLibrary.additionalInfo')}</h4>
                                     <div class="additional-data">
-                                        ${general.additionalData.age ? `<p><strong>Edad:</strong> ${general.additionalData.age}</p>` : ''}
-                                        ${general.additionalData.specialty ? `<p><strong>Especialidad:</strong> ${general.additionalData.specialty}</p>` : ''}
-                                        ${general.additionalData.favoriteWeapon ? `<p><strong>Arma Favorita:</strong> ${general.additionalData.favoriteWeapon}</p>` : ''}
-                                        ${general.additionalData.background ? `<p><strong>Antecedentes:</strong> ${general.additionalData.background}</p>` : ''}
+                                        ${general.additionalData.age ? `<p><strong>${t('dataLibrary.age')}</strong> ${general.additionalData.age}</p>` : ''}
+                                        ${general.additionalData.specialty ? `<p><strong>${t('dataLibrary.specialty')}</strong> ${general.additionalData.specialty}</p>` : ''}
+                                        ${general.additionalData.favoriteWeapon ? `<p><strong>${t('dataLibrary.favoriteWeapon')}</strong> ${general.additionalData.favoriteWeapon}</p>` : ''}
+                                        ${general.additionalData.background ? `<p><strong>${t('dataLibrary.background')}</strong> ${general.additionalData.background}</p>` : ''}
                                     </div>
                                 </div>
                             ` : ''}
@@ -286,7 +287,7 @@ class DataLibraryApp {
         const provinces = gameData.getProvinces();
         
         if (kingdoms.length === 0) {
-            return '<p>No hay provincias disponibles.</p>';
+            return '<p>' + t('dataLibrary.noProvinces') + '</p>';
         }
         
         let html = '';
@@ -316,11 +317,11 @@ class DataLibraryApp {
                         </div>
                         <div class="data-library-card-content">
                             <h3>${provinceName}</h3>
-                            ${i === 0 ? '<span class="badge">Capital</span>' : ''}
+                            ${i === 0 ? '<span class="badge">' + t('dataLibrary.capital') + '</span>' : ''}
                             ${provinceDescription ? `<p class="data-library-description">${provinceDescription}</p>` : ''}
                             ${provincePrompt ? `
                                 <div class="data-library-detail-section">
-                                    <h4>Prompt de Imagen</h4>
+                                    <h4>${t('dataLibrary.imagePrompt')}</h4>
                                     <p class="prompt-text">${provincePrompt}</p>
                                 </div>
                             ` : ''}

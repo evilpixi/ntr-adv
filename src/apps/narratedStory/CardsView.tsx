@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 import type { Card, HeroCard, Place } from './types'
 import { isHeroCard } from './types'
 import { useNarratedStoryTranslation } from './i18n'
+import { withBaseUrl } from '@/utils/assetUrl'
 
 interface CardsViewProps {
   cards: Card[]
@@ -39,7 +40,7 @@ function CardImage({
 
   return (
     <img
-      src={src}
+      src={withBaseUrl(src) ?? src}
       alt=""
       className={`narrated-tcg-card-art ${className ?? ''}`}
       loading="lazy"
@@ -138,7 +139,7 @@ function CardItem({
         {card.type === 'soldier' && (
           <p className="narrated-tcg-card-desc">
             {(card.hp != null || card.attack != null) && (
-              <>HP {card.hp ?? '?'} · ATK {card.attack ?? '?'}</>
+              <>{t('narratedStory.card.hp')} {card.hp ?? '?'} · {t('narratedStory.card.attack')} {card.attack ?? '?'}</>
             )}
             {card.description && ` — ${card.description}`}
           </p>

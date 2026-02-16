@@ -5,6 +5,7 @@
 
 import { getAvailableApps, launchApp } from './apps/index.js';
 import { gameData } from './dataLoader.js';
+import { t } from './i18n-classic.js';
 
 class WelcomeView {
     constructor() {
@@ -21,14 +22,14 @@ class WelcomeView {
         
         const welcomeHTML = `
             <div class="welcome-content">
-                <h1 class="welcome-title">NTR Adventure</h1>
-                <p class="welcome-subtitle">Selecciona una aplicación para comenzar</p>
+                <h1 class="welcome-title">${t('welcome.title')}</h1>
+                <p class="welcome-subtitle">${t('welcome.subtitle')}</p>
                 
                 <div class="apps-grid" id="appsGrid">
                     ${apps.map(app => this.createAppCard(app)).join('')}
                 </div>
             </div>
-        `;
+            `;
         
         this.container.innerHTML = welcomeHTML;
         
@@ -101,7 +102,7 @@ class WelcomeView {
             }
         } catch (error) {
             console.error('Error launching app:', error);
-            alert(`Error al iniciar la aplicación: ${error.message}`);
+            alert(t('welcome.errorLaunch', { message: error.message }));
         }
     }
 

@@ -58,7 +58,7 @@ export function Shell() {
               {t('shell.back', lang)}
             </button>
           ) : null}
-          <h1 className="shell-title">NTR Adventure</h1>
+          <h1 className="shell-title">{t('shell.title', lang)}</h1>
           <div className="shell-lang-switch" aria-label={t('shell.langAria', lang)}>
             <button
               type="button"

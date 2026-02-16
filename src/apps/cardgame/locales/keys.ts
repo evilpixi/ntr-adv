@@ -6,6 +6,7 @@ export const CARDGAME_KEYS = [
   'cardgame.cardType.item',
   'cardgame.cardType.soldier',
   'cardgame.card.hp',
+  'cardgame.card.attack',
   'cardgame.card.strength',
   'cardgame.card.agility',
   'cardgame.card.intelligence',

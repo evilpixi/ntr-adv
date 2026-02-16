@@ -65,7 +65,7 @@ export function StoryChat({
         </h2>
 
         <div className="narrated-story-chat">
-          <div className="narrated-story-messages" role="log" aria-label="Chat">
+          <div className="narrated-story-messages" role="log" aria-label={t('narratedStory.chat.ariaLog')}>
             {messages.length === 0 && (
               <div className="narrated-story-no-intro">
                 <p className="narrated-story-welcome">{t('narratedStory.story.noIntroYet')}</p>
@@ -106,7 +106,7 @@ export function StoryChat({
                 ) : (
                   <div className="narrated-story-message-body narrated-story-message-body--md">
                     {msg.events != null && msg.events.length > 0 && (
-                      <ul className="narrated-story-turn-events" aria-label="Eventos del turno">
+                      <ul className="narrated-story-turn-events" aria-label={t('narratedStory.chat.turnEventsAria')}>
                         {msg.events.map((ev, i) => (
                           <li
                             key={i}
@@ -123,7 +123,7 @@ export function StoryChat({
                     )}
                     <ReactMarkdown>{msg.content}</ReactMarkdown>
                     {msg.turnSummary != null && msg.turnSummary !== '' && (
-                      <div className="narrated-story-turn-summary narrated-story-turn-summary--with-stats" aria-label="Resumen del turno">
+                      <div className="narrated-story-turn-summary narrated-story-turn-summary--with-stats" aria-label={t('narratedStory.chat.turnSummaryAria')}>
                         <ReactMarkdown>{msg.turnSummary}</ReactMarkdown>
                       </div>
                     )}

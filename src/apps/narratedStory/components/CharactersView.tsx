@@ -5,6 +5,7 @@ import type { Personaje, PlayerProfile, Place } from '../types'
 import type { NarratedStoryKey } from '../locales/keys'
 import { useNarratedStoryTranslation } from '../i18n'
 import { GiHearts, GiMuscleUp, GiRunningShoe, GiBrain, GiSpeaker } from '@/theme/icons'
+import { withBaseUrl } from '@/utils/assetUrl'
 
 interface CharactersViewProps {
   characters: Personaje[]
@@ -45,7 +46,7 @@ function CharacterImage({
 
   return (
     <img
-      src={src}
+      src={withBaseUrl(src) ?? src}
       alt=""
       className={`ns-char-portrait ${className}`.trim()}
       loading="lazy"
