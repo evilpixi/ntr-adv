@@ -45,6 +45,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     define: {
       __ENV_FALLBACK__: JSON.stringify(envFallback),
+      __BASE_URL__: JSON.stringify(base),
     },
     server: {
       // Dev: single Vite server. Narrated Story uses client-side AI (aiProviderApi) only.
