@@ -1,104 +1,109 @@
 /**
  * Definición de tools en formato OpenAI para el chat de Narrated Story.
- * Debe coincidir con lo que esperan los proveedores compatibles con OpenAI.
+ * Tres tools: get_state, create (un payload), apply_updates (un payload).
  */
 export const NARRATED_STORY_OPENAI_TOOLS = [
   {
     type: 'function' as const,
     function: {
-      name: 'narrated_story_update_character',
+      name: 'narrated_story_get_state',
       description:
-        'Update a character: location, activity, state, stats, corruption (0-100), loveRegent (0-100), lust (0-100), sexCount, developedKinks, feelingsToward.',
-      parameters: {
-        type: 'object' as const,
-        properties: {
-          characterId: { type: 'string' as const, description: 'Character id' },
-          patch: { type: 'object' as const, description: 'Fields to update' },
-        },
-        required: ['characterId', 'patch'],
-      },
+        'Returns the current partida state: characters (id, name, role, hp, stats, currentPlaceId, currentActivity, currentState, corruption 0-100, loveRegent 0-100, lust 0-100, sexCount, developedKinks, feelingsToward), places, placeAdditionalInfo. Call at the start of every turn.',
+      parameters: { type: 'object' as const, properties: {}, required: [] as string[] },
     },
   },
   {
     type: 'function' as const,
     function: {
-      name: 'narrated_story_update_characters',
-      description: 'Update multiple characters at once.',
-      parameters: {
-        type: 'object' as const,
-        properties: {
-          updates: { type: 'array' as const, description: 'List of { characterId, patch }' },
-        },
-        required: ['updates'],
-      },
-    },
-  },
-  {
-    type: 'function' as const,
-    function: {
-      name: 'narrated_story_set_character_locations',
+      name: 'narrated_story_create',
       description:
-        "Set each character's location (placeId). Single source of truth for Character view and Places view. Each character in exactly one place; use placeId null for no location. Params: locations = [{ characterId, placeId, currentActivity?, currentState? }].",
+        'Create all new places and/or characters for this turn in one payload. Provide places array and/or characters array. Then use narrated_story_apply_updates in the same turn to set locations and stats.',
       parameters: {
         type: 'object' as const,
         properties: {
-          locations: {
+          places: {
             type: 'array' as const,
-            description: 'List of { characterId, placeId (string or null), currentActivity?, currentState? }',
+            description: 'Optional. [{ placeId, name, description? }]',
+            items: {
+              type: 'object' as const,
+              properties: {
+                placeId: { type: 'string' as const },
+                name: { type: 'string' as const },
+                description: { type: 'string' as const },
+              },
+              required: ['placeId', 'name'],
+            },
+          },
+          characters: {
+            type: 'array' as const,
+            description: 'Optional. [{ id, name, role "npc", description?, class?, race? }]',
+            items: {
+              type: 'object' as const,
+              properties: {
+                id: { type: 'string' as const },
+                name: { type: 'string' as const },
+                role: { type: 'string' as const },
+                description: { type: 'string' as const },
+                class: { type: 'string' as const },
+                race: { type: 'string' as const },
+              },
+              required: ['id', 'name'],
+            },
           },
         },
-        required: ['locations'],
+        required: [],
       },
     },
   },
   {
     type: 'function' as const,
     function: {
-      name: 'narrated_story_update_place',
-      description: 'Update an existing place.',
-      parameters: {
-        type: 'object' as const,
-        properties: {
-          placeId: { type: 'string' as const },
-          patch: { type: 'object' as const },
-        },
-        required: ['placeId', 'patch'],
-      },
-    },
-  },
-  {
-    type: 'function' as const,
-    function: {
-      name: 'narrated_story_create_character',
+      name: 'narrated_story_apply_updates',
       description:
-        'Register a new NPC when they become relevant (e.g. Kaelen, Lord Silas, Lysandra). Required: id (slug), name, role "npc".',
+        'Apply all updates for this turn in one payload: placeUpdates, characterUpdates (stats, corruption, feelingsToward, etc.), characterLocations (where each character is). Single source of truth for UI.',
       parameters: {
         type: 'object' as const,
         properties: {
-          character: {
-            type: 'object' as const,
-            description:
-              'id, name, role ("npc"), description, class, race, currentPlaceId, currentActivity, currentState, corruption (0-100), loveRegent (0-100), lust (0-100), sexCount, developedKinks, feelingsToward (object)',
+          placeUpdates: {
+            type: 'array' as const,
+            description: 'Optional. [{ placeId, patch: { name?, description?, additionalInfo? } }]',
+            items: {
+              type: 'object' as const,
+              properties: {
+                placeId: { type: 'string' as const },
+                patch: { type: 'object' as const },
+              },
+              required: ['placeId', 'patch'],
+            },
+          },
+          characterUpdates: {
+            type: 'array' as const,
+            description: 'Optional. [{ characterId, patch }] with currentPlaceId, corruption, loveRegent, lust, sexCount, developedKinks, feelingsToward, etc.',
+            items: {
+              type: 'object' as const,
+              properties: {
+                characterId: { type: 'string' as const },
+                patch: { type: 'object' as const },
+              },
+              required: ['characterId', 'patch'],
+            },
+          },
+          characterLocations: {
+            type: 'array' as const,
+            description: 'Optional. [{ characterId, placeId (string or null), currentActivity?, currentState? }]',
+            items: {
+              type: 'object' as const,
+              properties: {
+                characterId: { type: 'string' as const },
+                placeId: { type: 'string' as const },
+                currentActivity: { type: 'string' as const },
+                currentState: { type: 'string' as const },
+              },
+              required: ['characterId'],
+            },
           },
         },
-        required: ['character'],
-      },
-    },
-  },
-  {
-    type: 'function' as const,
-    function: {
-      name: 'narrated_story_create_place',
-      description:
-        'Add a new place when the story mentions it. In the same turn you must also call update_character or update_characters for every character who is at that place or moving there, setting currentPlaceId to this place id.',
-      parameters: {
-        type: 'object' as const,
-        properties: {
-          placeId: { type: 'string' as const },
-          name: { type: 'string' as const },
-          description: { type: 'string' as const },
-        },
-        required: ['placeId', 'name'],
+        required: [],
       },
     },
   },

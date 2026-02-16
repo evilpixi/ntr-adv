@@ -409,6 +409,10 @@
   border-left-color: #db7093;
 }
 
+.narrated-story-turn-event-emoji {
+  margin-right: 0.35em;
+}
+
 /* Resumen del turno (al final del mensaje app) */
 .narrated-story-turn-summary {
   margin-top: 0.75em;
@@ -432,6 +436,14 @@
 .narrated-story-turn-summary ul {
   margin: 0.35em 0 0;
   padding-left: 1.25em;
+}
+
+.narrated-story-turn-summary--with-stats {
+  border-left-color: var(--color-accent-muted);
+}
+
+.narrated-story-turn-summary--with-stats strong {
+  color: var(--color-accent);
 }
 
 /* Sent messages dropdown */

@@ -183,6 +183,8 @@ export interface TurnEvent {
   text: string
   /** Si es true, se muestra en estilo rosa/sexual. */
   sexual?: boolean
+  /** Emoji opcional para mostrar antes del texto (ej. 📍 🔞 👤). */
+  emoji?: string
 }
 
 export interface ChatMessage {

@@ -9,8 +9,10 @@ import { DEFAULT_SYSTEM_PROMPT } from './defaultSystemPrompt'
 import { DEFAULT_STORY_PROMPT } from './defaultStoryPrompt'
 import { DEFAULT_KINKS_PROMPT } from './defaultKinksPrompt'
 import { DEFAULT_EXTRA_INDICATIONS } from './defaultExtraIndications'
+import { loadAiSettings } from '@/store/aiSettings'
 import { runNextTurn, type TurnMessage } from './runNextTurn'
 import { realAIProvider } from './aiProviderApi'
+import { runLangGraphTurn } from './langgraphTurn'
 import { StoryChat, CharactersView, PlacesView, PlayerLauncher, StoryPromptStep } from './components'
 import type { NarratedStoryKey } from './locales/keys'
 import type { ChatMessage, Personaje, PlayerProfile, Place } from './types'
@@ -178,23 +180,25 @@ const NarratedStoryApp: ComponentType<{ appId: string }> = () => {
       role: m.role,
       content: m.content,
     }))
-    runNextTurn(
-      {
-        userMessage: text,
-        playerProfile: playerProfile!,
-        characters,
-        messages: turnMessages,
-        places,
-        systemPrompt,
-        storyPrompt,
-        kinksPrompt,
-        extraIndications,
-        maxMessages: 50,
-        language,
-        turnNumber,
-      },
-      AI_PROVIDER
-    )
+    const turnParams = {
+      userMessage: text,
+      playerProfile: playerProfile!,
+      characters,
+      messages: turnMessages,
+      places,
+      systemPrompt,
+      storyPrompt,
+      kinksPrompt,
+      extraIndications,
+      maxMessages: 50,
+      language,
+      turnNumber,
+    }
+    const runTurn =
+      loadAiSettings().service.toLowerCase() === 'ollama'
+        ? () => runNextTurn(turnParams, AI_PROVIDER)
+        : () => runLangGraphTurn(turnParams)
+    runTurn()
       .then(({ narrative, events, turnSummary, characters: nextCharacters, places: nextPlaces }) => {
         const appReply: ChatMessage = {
           id: nextId(),
@@ -231,23 +235,25 @@ const NarratedStoryApp: ComponentType<{ appId: string }> = () => {
     if (!playerProfile) return
     setCreatingIntro(true)
     const introTurnMessages: TurnMessage[] = [{ id: 'intro', role: 'user', content: INTRO_USER_MESSAGE }]
-    runNextTurn(
-      {
-        userMessage: INTRO_USER_MESSAGE,
-        playerProfile,
-        characters,
-        messages: introTurnMessages,
-        places,
-        systemPrompt,
-        storyPrompt,
-        kinksPrompt,
-        extraIndications,
-        maxMessages: 0,
-        language,
-        turnNumber: 0,
-      },
-      AI_PROVIDER
-    )
+    const introParams = {
+      userMessage: INTRO_USER_MESSAGE,
+      playerProfile,
+      characters,
+      messages: introTurnMessages,
+      places,
+      systemPrompt,
+      storyPrompt,
+      kinksPrompt,
+      extraIndications,
+      maxMessages: 0,
+      language,
+      turnNumber: 0,
+    }
+    const runIntro =
+      loadAiSettings().service.toLowerCase() === 'ollama'
+        ? () => runNextTurn(introParams, AI_PROVIDER)
+        : () => runLangGraphTurn(introParams)
+    runIntro()
       .then((result) => {
         const appMsg: ChatMessage = { id: nextId(), role: 'app', content: result.narrative }
         setMessages([appMsg])

@@ -99,6 +99,10 @@ export function StoryChat({
                             key={i}
                             className={ev.sexual ? 'narrated-story-turn-event narrated-story-turn-event--sexual' : 'narrated-story-turn-event'}
                           >
+                            <span className="narrated-story-turn-event-emoji" aria-hidden>
+                              {ev.emoji ?? (ev.sexual ? '🔞' : '•')}
+                            </span>
+                            {' '}
                             {ev.text}
                           </li>
                         ))}
@@ -106,7 +110,7 @@ export function StoryChat({
                     )}
                     <ReactMarkdown>{msg.content}</ReactMarkdown>
                     {msg.turnSummary != null && msg.turnSummary !== '' && (
-                      <div className="narrated-story-turn-summary" aria-label="Resumen del turno">
+                      <div className="narrated-story-turn-summary narrated-story-turn-summary--with-stats" aria-label="Resumen del turno">
                         <ReactMarkdown>{msg.turnSummary}</ReactMarkdown>
                       </div>
                     )}

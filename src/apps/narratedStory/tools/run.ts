@@ -1,6 +1,6 @@
 /**
  * Ejecutor de tools solo para la app Narrated Story.
- * Usar en cada turno de la IA o desde el MCP cuando el contexto sea de partida narrativa.
+ * Tools: get_state, create (payload único), apply_updates (payload único).
  */
 import type { NarratedStoryToolContext } from './context'
 import { getNarratedStoryToolDefinition } from './definitions'
@@ -39,85 +39,82 @@ export async function runNarratedStoryTool(
         console.log(`${LOG_PREFIX} get_state: characters=${partida.characters?.length ?? 0} places=${partida.places?.length ?? 0}`)
         return { text: JSON.stringify(partida) }
       }
-      case 'narrated_story_update_character': {
-        const characterId = args.characterId as string | undefined
-        const patch = args.patch as Record<string, unknown> | undefined
-        if (characterId == null) return { text: JSON.stringify({ error: 'Missing characterId' }), isError: true }
-        if (!patch || typeof patch !== 'object') return { text: JSON.stringify({ error: 'Missing or invalid patch' }), isError: true }
-        const patchKeys = Object.keys(patch).filter((k) => patch[k] !== undefined)
-        console.log(`${LOG_PREFIX} update_character: characterId=${characterId} patch keys=[${patchKeys.join(', ')}]`)
-        await context.updateCharacter(characterId, patch)
-        console.log(`${LOG_PREFIX} update_character: saved OK`)
-        return { text: JSON.stringify({ ok: true, message: 'Character updated.' }) }
+
+      case 'narrated_story_create': {
+        const places = args.places as Array<{ placeId?: string; name?: string; description?: string }> | undefined
+        const characters = args.characters as Array<Record<string, unknown>> | undefined
+        const placesList = Array.isArray(places) ? places : []
+        const charactersList = Array.isArray(characters) ? characters : []
+        if (placesList.length === 0 && charactersList.length === 0) {
+          return { text: JSON.stringify({ ok: true, message: 'Nothing to create.', places: 0, characters: 0 }) }
+        }
+        for (const p of placesList) {
+          const placeId = p?.placeId ?? ''
+          const placeName = p?.name ?? ''
+          if (!placeId || !placeName) continue
+          console.log(`${LOG_PREFIX} create: place ${placeId} ${placeName}`)
+          await context.createPlace(placeId, placeName, p?.description)
+        }
+        for (const c of charactersList) {
+          if (!c || typeof c !== 'object') continue
+          const id = String(c.id ?? '')
+          const charName = String(c.name ?? 'Unknown')
+          if (!id) continue
+          console.log(`${LOG_PREFIX} create: character ${id} ${charName}`)
+          await context.createCharacter(c)
+        }
+        console.log(`${LOG_PREFIX} create: saved OK places=${placesList.length} characters=${charactersList.length}`)
+        return { text: JSON.stringify({ ok: true, message: 'Created.', places: placesList.length, characters: charactersList.length }) }
       }
-      case 'narrated_story_update_characters': {
-        const updates = args.updates as Array<{ characterId: string; patch: Record<string, unknown> }> | undefined
-        if (!Array.isArray(updates)) return { text: JSON.stringify({ error: 'Missing or invalid updates array' }), isError: true }
-        console.log(`${LOG_PREFIX} update_characters: count=${updates.length} ids=[${updates.map((u) => u.characterId).join(', ')}]`)
-        await context.updateCharacters(updates)
-        console.log(`${LOG_PREFIX} update_characters: saved OK`)
-        return { text: JSON.stringify({ ok: true, message: 'Characters updated.', count: updates.length }) }
-      }
-      case 'narrated_story_set_character_locations': {
-        const locations = args.locations as Array<{
-          characterId: string
+
+      case 'narrated_story_apply_updates': {
+        const placeUpdates = args.placeUpdates as Array<{ placeId?: string; patch?: Record<string, unknown> }> | undefined
+        const characterUpdates = args.characterUpdates as Array<{ characterId?: string; patch?: Record<string, unknown> }> | undefined
+        const characterLocations = args.characterLocations as Array<{
+          characterId?: string
           placeId?: string | null
           currentActivity?: string
           currentState?: string
         }> | undefined
-        if (!Array.isArray(locations)) return { text: JSON.stringify({ error: 'Missing or invalid locations array' }), isError: true }
-        const updates = locations.map((loc) => {
-          const characterId = loc.characterId
-          if (characterId == null || typeof characterId !== 'string') {
-            return null
-          }
-          const patch: Record<string, unknown> = {}
-          if (loc.placeId !== undefined) {
-            patch.currentPlaceId = loc.placeId === null || loc.placeId === '' ? null : loc.placeId
-          }
+        const placeList = Array.isArray(placeUpdates) ? placeUpdates : []
+        const charUpdatesList = Array.isArray(characterUpdates) ? characterUpdates : []
+        const locList = Array.isArray(characterLocations) ? characterLocations : []
+
+        for (const pu of placeList) {
+          const placeId = pu?.placeId
+          const patch = pu?.patch
+          if (placeId == null || !patch || typeof patch !== 'object') continue
+          console.log(`${LOG_PREFIX} apply_updates: place ${placeId}`)
+          await context.updatePlace(placeId, patch)
+        }
+
+        const mergedByChar = new Map<string, Record<string, unknown>>()
+        for (const u of charUpdatesList) {
+          const cid = u?.characterId
+          const patch = u?.patch
+          if (cid == null || typeof cid !== 'string' || !patch || typeof patch !== 'object') continue
+          const existing = mergedByChar.get(cid) ?? {}
+          mergedByChar.set(cid, { ...existing, ...patch })
+        }
+        for (const loc of locList) {
+          const cid = loc?.characterId
+          if (cid == null || typeof cid !== 'string') continue
+          const existing = mergedByChar.get(cid) ?? {}
+          const patch: Record<string, unknown> = { ...existing }
+          if (loc.placeId !== undefined) patch.currentPlaceId = loc.placeId === null || loc.placeId === '' ? null : loc.placeId
           if (loc.currentActivity !== undefined) patch.currentActivity = loc.currentActivity
           if (loc.currentState !== undefined) patch.currentState = loc.currentState
-          return { characterId, patch }
-        }).filter((u): u is { characterId: string; patch: Record<string, unknown> } => u !== null && Object.keys(u.patch).length > 0)
-        if (updates.length === 0) {
-          return { text: JSON.stringify({ error: 'No valid location updates (need characterId and at least placeId, currentActivity, or currentState)' }), isError: true }
+          mergedByChar.set(cid, patch)
         }
-        console.log(`${LOG_PREFIX} set_character_locations: count=${updates.length} ids=[${updates.map((u) => u.characterId).join(', ')}]`)
-        await context.updateCharacters(updates)
-        console.log(`${LOG_PREFIX} set_character_locations: saved OK (single source: Character view and Places view will show same data)`)
-        return { text: JSON.stringify({ ok: true, message: 'Character locations updated. No duplicates: each character is in exactly one place.', count: updates.length }) }
+        const updates = Array.from(mergedByChar.entries()).map(([characterId, patch]) => ({ characterId, patch }))
+        if (updates.length > 0) {
+          console.log(`${LOG_PREFIX} apply_updates: characters ${updates.length} ids=[${updates.map((u) => u.characterId).join(', ')}]`)
+          await context.updateCharacters(updates)
+        }
+        console.log(`${LOG_PREFIX} apply_updates: saved OK places=${placeList.length} characters=${updates.length}`)
+        return { text: JSON.stringify({ ok: true, message: 'Updates applied.', placeUpdates: placeList.length, characterUpdates: updates.length }) }
       }
-      case 'narrated_story_update_place': {
-        const placeId = args.placeId as string | undefined
-        const patch = args.patch as Record<string, unknown> | undefined
-        if (placeId == null) return { text: JSON.stringify({ error: 'Missing placeId' }), isError: true }
-        if (!patch || typeof patch !== 'object') return { text: JSON.stringify({ error: 'Missing or invalid patch' }), isError: true }
-        console.log(`${LOG_PREFIX} update_place: placeId=${placeId} patch keys=[${Object.keys(patch).join(', ')}]`)
-        await context.updatePlace(placeId, patch)
-        console.log(`${LOG_PREFIX} update_place: saved OK`)
-        return { text: JSON.stringify({ ok: true, message: 'Place updated.' }) }
-      }
-      case 'narrated_story_create_character': {
-        const character = args.character as Record<string, unknown> | undefined
-        if (!character || typeof character !== 'object') return { text: JSON.stringify({ error: 'Missing or invalid character' }), isError: true }
-        const id = String(character.id ?? '')
-        const charName = String(character.name ?? 'Unknown')
-        console.log(`${LOG_PREFIX} create_character: id=${id} name=${charName} role=${character.role ?? 'npc'}`)
-        await context.createCharacter(character)
-        console.log(`${LOG_PREFIX} create_character: saved OK`)
-        return { text: JSON.stringify({ ok: true, message: 'Character created.' }) }
-      }
-      case 'narrated_story_create_place': {
-        const placeId = args.placeId as string | undefined
-        const placeName = args.name as string | undefined
-        const description = args.description as string | undefined
-        if (placeId == null) return { text: JSON.stringify({ error: 'Missing placeId' }), isError: true }
-        if (placeName == null) return { text: JSON.stringify({ error: 'Missing name' }), isError: true }
-        console.log(`${LOG_PREFIX} create_place: placeId=${placeId} name=${placeName}`)
-        await context.createPlace(placeId, placeName, description)
-        console.log(`${LOG_PREFIX} create_place: saved OK`)
-        return { text: JSON.stringify({ ok: true, message: 'Place created.' }) }
-      }
+
       default:
         return { text: JSON.stringify({ error: `Unhandled tool: ${name}` }), isError: true }
     }

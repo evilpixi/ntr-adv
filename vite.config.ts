@@ -49,6 +49,7 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, 'src'),
         tools: path.resolve(__dirname, 'tools'),
+        'node:async_hooks': path.resolve(__dirname, 'src/stub/async_hooks.ts'),
       },
       dedupe: ['react', 'react-dom'],
     },

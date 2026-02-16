@@ -211,9 +211,9 @@ La app web guarda en IndexedDB; para que la IA vea o modifique datos, puedes exp
 | `ntr_list_app_tools` | shell | Lista las tools MCP de una app. |
 | `narrated_story_list_saves` | narrated-story | Lista saves en `mcp-data/narrated-story/`. |
 | `narrated_story_read_save` | narrated-story | Lee el JSON de un save por nombre (usa `saveName: "current"` para la partida en curso). |
-| `narrated_story_update_character` | narrated-story | Actualiza stats/campos de un personaje de la partida. |
-| `narrated_story_update_characters` | narrated-story | Actualiza varios personajes a la vez. |
-| `narrated_story_set_character_locations` | narrated-story | Asigna ubicación de personajes (placeId). Fuente única: vista Personajes y Lugares; sin duplicados. |
+| `narrated_story_get_state` | narrated-story | Devuelve el estado actual de la partida (personajes, lugares). |
+| `narrated_story_create` | narrated-story | Crea en un solo payload todos los lugares y/o personajes nuevos del turno. |
+| `narrated_story_apply_updates` | narrated-story | Aplica en un solo payload todas las actualizaciones: lugares, personajes (stats, ubicaciones). Fuente única para la UI. |
 | `cardgame_list_decks` | cardgame | Lista mazos en `mcp-data/cardgame/`. |
 | `cardgame_read_deck` | cardgame | Lee un mazo por nombre. |
 | `cardgame_write_deck` | cardgame | Escribe un mazo (JSON) en el directorio MCP. |
