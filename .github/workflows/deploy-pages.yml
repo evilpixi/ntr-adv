@@ -32,61 +32,11 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Inject environment variables into HTML
-        run: |
-          node -e "
-          const fs = require('fs');
-          const path = require('path');
-          
-          const envVars = {
-            OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
-            OPENAI_MODEL: process.env.OPENAI_MODEL || 'gpt-4',
-            OPENAI_BASE_URL: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
-            DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY || '',
-            DEEPSEEK_MODEL: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
-            DEEPSEEK_BASE_URL: process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1',
-            GROK_API_KEY: process.env.GROK_API_KEY || '',
-            GROK_MODEL: process.env.GROK_MODEL || 'grok-beta',
-            GROK_BASE_URL: process.env.GROK_BASE_URL || 'https://api.x.ai/v1',
-            OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
-            OLLAMA_MODEL: process.env.OLLAMA_MODEL || 'llama2',
-            DEFAULT_AI_SERVICE: process.env.DEFAULT_AI_SERVICE || 'openai',
-            GAME_LANGUAGE: process.env.GAME_LANGUAGE || 'es'
-          };
-          
-          // Log for debug (without showing sensitive values)
-          console.log('Environment variables detected:');
-          Object.keys(envVars).forEach(key => {
-            const hasValue = envVars[key] && envVars[key] !== '';
-            console.log(\`  \${key}: \${hasValue ? '[CONFIGURED]' : '[EMPTY]'}\`);
-          });
-          
-          const indexPath = path.join(process.cwd(), 'index.html');
-          let html = fs.readFileSync(indexPath, 'utf8');
-          
-          // Replace the window.__ENV__ placeholder with real variables
-          // Use a pattern that captures the entire object including line breaks and multiple properties
-          const envScript = \`window.__ENV__ = \${JSON.stringify(envVars, null, 2)};\`;
-          // Pattern that captures from window.__ENV__ = to the closing };
-          const pattern = /window\.__ENV__\s*=\s*\{[\s\S]*?\};/;
-          
-          if (pattern.test(html)) {
-            html = html.replace(pattern, envScript);
-            console.log('Environment variables injected successfully into index.html');
-          } else {
-            console.error('ERROR: window.__ENV__ pattern not found in index.html');
-            console.error('Searching for pattern:', pattern.toString());
-            // Try to find the block manually for debug
-            const match = html.match(/window\.__ENV__[\s\S]{0,200}/);
-            if (match) {
-              console.error('Block found (first 200 chars):', match[0]);
-            }
-            process.exit(1);
-          }
-          
-          fs.writeFileSync(indexPath, html);
-          "
+      - name: Build (Vite)
+        run: npm run build
         env:
+          # Base path para GitHub Pages (https://<user>.github.io/<repo>/)
+          VITE_BASE: '/${{ github.event.repository.name }}/'
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
           OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
@@ -107,7 +57,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: 'dist'
 
   deploy:
     environment:
