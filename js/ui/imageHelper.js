@@ -39,6 +39,9 @@ export function normalizeImageUrl(url) {
         basePath = '/' + pathParts[0] + '/';
     }
     
+    // If URL already has the base path (e.g. from constants.js), don't double it
+    if (basePath !== '/' && trimmedUrl.startsWith(basePath)) return trimmedUrl;
+    
     // Normalize the URL
     if (trimmedUrl.startsWith('/')) {
         // Absolute path from root - prepend base path if not at root
