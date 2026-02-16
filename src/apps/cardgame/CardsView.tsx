@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 import type { Card, HeroCard, Place } from './types'
 import { isHeroCard } from './types'
 import { useCardGameTranslation } from './i18n'
+import { withBaseUrl } from '@/utils/assetUrl'
 
 interface CardsViewProps {
   cards: Card[]
@@ -38,7 +39,7 @@ function CardImage({
 
   return (
     <img
-      src={src}
+      src={withBaseUrl(src) ?? src}
       alt=""
       className={`cg-card-art ${className ?? ''}`}
       loading="lazy"
@@ -136,7 +137,7 @@ function CardItem({
         {card.type === 'soldier' && (
           <p className="cg-card-desc">
             {(card.hp != null || card.attack != null) && (
-              <>HP {card.hp ?? '?'} · ATK {card.attack ?? '?'}</>
+              <>{t('cardgame.card.hp')} {card.hp ?? '?'} · {t('cardgame.card.attack')} {card.attack ?? '?'}</>
             )}
             {card.description && ` — ${card.description}`}
           </p>

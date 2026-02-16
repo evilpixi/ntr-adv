@@ -314,7 +314,7 @@ const NarratedStoryApp: ComponentType<{ appId: string }> = () => {
               {' '}
               {t('narratedStory.tab.info')}
             </h2>
-            <p className="ns-info-intro">Information about the current story and controls.</p>
+            <p className="ns-info-intro">{t('narratedStory.info.intro')}</p>
             <section className="ns-info-prompts-section" aria-labelledby="ns-info-prompts-heading">
               <h3 id="ns-info-prompts-heading" className="ns-prompts-heading">
                 <GiScrollUnfurled className="icon icon-sm" aria-hidden />
@@ -375,7 +375,7 @@ const NarratedStoryApp: ComponentType<{ appId: string }> = () => {
         {activeTab === 'notes' && (
           <div className="narrated-story-panel-content">
             <h2 className="section-title">{t('narratedStory.tab.notes')}</h2>
-            <p>Your notes and bookmarks.</p>
+            <p>{t('narratedStory.notes.intro')}</p>
           </div>
         )}
         {activeTab === 'characters' && (

@@ -3,6 +3,7 @@ import { generateStory } from './aiIntegration.js';
 import { createImageElement } from './ui/imageHelper.js';
 import { getGeneralImage, getKingdomImage, getProvinceImage } from './config.js';
 import { gameData } from './dataLoader.js';
+import { t } from './i18n-classic.js';
 
 class Game {
     /**
@@ -274,13 +275,13 @@ class Game {
         const kingdomImageUrl = getKingdomImage(kingdomId);
         
         // Determine label based on whether it's ally or enemy
-        const ownerLabel = kingdom.owner === 'player' ? 'Ally' : 'Enemy';
+        const ownerLabel = kingdom.owner === 'player' ? t('classic.ally') : t('classic.enemy');
         
         // Create provinces list
         let provincesList = '';
         if (kingdom.provinces.length > 0) {
             provincesList = `<div class="kingdom-provinces-list">
-                <h5>Provinces (${provincesCount}):</h5>
+                <h5>${t('classic.provincesCount')} (${provincesCount}):</h5>
                 <ul class="provinces-list-items">`;
             kingdom.provinces.forEach(province => {
                 provincesList += `<li class="province-list-item">${province.name}</li>`;
@@ -301,15 +302,15 @@ class Game {
             </div>
             
             <div class="kingdom-detail-description">
-                <p>${kingdomData.description || 'No description available.'}</p>
+                <p>${kingdomData.description || t('classic.noDescription')}</p>
             </div>
             
             <div class="kingdom-detail-stats">
-                <h3>Statistics</h3>
+                <h3>${t('classic.statistics')}</h3>
                 <div class="stats-grid">
                     <div class="stat-item">
-                        <span class="stat-label">Generals:</span>
-                        <span class="stat-value">${generalsCount} (${availableGenerals} available)</span>
+                        <span class="stat-label">${t('classic.generalsLabel')}</span>
+                        <span class="stat-value">${generalsCount} (${availableGenerals} ${t('classic.available')})</span>
                     </div>
                 </div>
             </div>
@@ -318,23 +319,23 @@ class Game {
             
             <div class="kingdom-detail-sections">
                 <div class="detail-section">
-                    <h3>Architecture</h3>
-                    <p>${kingdomData.architecturalStyle || 'No information available.'}</p>
+                    <h3>${t('dataLibrary.architecture')}</h3>
+                    <p>${kingdomData.architecturalStyle || t('classic.noInfoAvailable')}</p>
                 </div>
                 
                 <div class="detail-section">
-                    <h3>Biome</h3>
-                    <p>${kingdomData.biome || 'No information available.'}</p>
+                    <h3>${t('dataLibrary.biome')}</h3>
+                    <p>${kingdomData.biome || t('classic.noInfoAvailable')}</p>
                 </div>
                 
                 <div class="detail-section">
-                    <h3>Government Type</h3>
-                    <p>${kingdomData.governmentType || 'No information available.'}</p>
+                    <h3>${t('dataLibrary.governmentType')}</h3>
+                    <p>${kingdomData.governmentType || t('classic.noInfoAvailable')}</p>
                 </div>
                 
                 <div class="detail-section">
-                    <h3>Society</h3>
-                    <p>${kingdomData.socialDescription || 'No information available.'}</p>
+                    <h3>${t('dataLibrary.society')}</h3>
+                    <p>${kingdomData.socialDescription || t('classic.noInfoAvailable')}</p>
                 </div>
             </div>
         `;
@@ -387,14 +388,14 @@ class Game {
         const hpPercent = (general.hp / general.maxHp) * 100;
         const lovePercent = general.love;
         
-        let statusText = 'Free';
+        let statusText = t('classic.free');
         let statusClass = '';
         if (general.status === 'captured') {
-            statusText = 'Captured';
+            statusText = t('classic.captured');
             statusClass = 'captured';
         }
         if (general.status === 'slave') {
-            statusText = 'Slave';
+            statusText = t('classic.slave');
             statusClass = 'slave';
         }
         
@@ -406,13 +407,13 @@ class Game {
         
         // Determine border color based on whether it's ally or enemy
         const borderColor = isPlayerGeneral ? '#4ade80' : '#ff4a4a';
-        const ownerLabel = isPlayerGeneral ? 'Ally' : 'Enemy';
+        const ownerLabel = isPlayerGeneral ? t('classic.ally') : t('classic.enemy');
         
         let assignActionButton = '';
         if (isPlayerGeneral && this.gameMode.isGeneralAvailable(general)) {
             assignActionButton = `
                 <div class="general-detail-actions">
-                    <button class="btn btn-primary" id="assignActionBtn">Assign Action</button>
+                    <button class="btn btn-primary" id="assignActionBtn">${t('classic.assignActionBtn')}</button>
                 </div>
             `;
         }
@@ -435,41 +436,41 @@ class Game {
                 
                 <div class="general-detail-data">
                     <div class="kingdom-detail-stats">
-                        <h3>Statistics</h3>
+                        <h3>${t('classic.statistics')}</h3>
                         <div class="stats-grid">
                             <div class="stat-item">
-                                <span class="stat-label">HP:</span>
+                                <span class="stat-label">${t('dataLibrary.hp')}</span>
                                 <span class="stat-value">${general.hp}/${general.maxHp}</span>
                             </div>
                             <div class="stat-item">
-                                <span class="stat-label">Love:</span>
+                                <span class="stat-label">${t('dataLibrary.love')}</span>
                                 <span class="stat-value">${general.love}</span>
                             </div>
                             <div class="stat-item">
-                                <span class="stat-label">Strength:</span>
+                                <span class="stat-label">${t('dataLibrary.strength')}</span>
                                 <span class="stat-value">${general.strength}</span>
                             </div>
                             <div class="stat-item">
-                                <span class="stat-label">Kingdom:</span>
+                                <span class="stat-label">${t('classic.kingdom')}</span>
                                 <span class="stat-value">${kingdom.name}</span>
                             </div>
                             ${general.location ? `
                             <div class="stat-item">
-                                <span class="stat-label">Location:</span>
+                                <span class="stat-label">${t('classic.location')}</span>
                                 <span class="stat-value">${general.location}</span>
                             </div>
                             ` : ''}
                         </div>
                         <div style="margin-top: 15px;">
                             <div class="stat">
-                                <span class="stat-label">HP:</span>
+                                <span class="stat-label">${t('dataLibrary.hp')}</span>
                                 <span class="stat-value">${general.hp}/${general.maxHp}</span>
                             </div>
                             <div class="hp-bar">
                                 <div class="hp-bar-fill" style="width: ${hpPercent}%"></div>
                             </div>
                             <div class="stat" style="margin-top: 10px;">
-                                <span class="stat-label">Love:</span>
+                                <span class="stat-label">${t('dataLibrary.love')}</span>
                                 <span class="stat-value">${general.love}</span>
                             </div>
                             <div class="love-bar">
@@ -487,25 +488,25 @@ class Game {
                     <div class="kingdom-detail-sections">
                         ${generalData.personality ? `
                         <div class="detail-section">
-                            <h3>Personality</h3>
+                            <h3>${t('dataLibrary.personality')}</h3>
                             <p>${generalData.personality}</p>
                         </div>
                         ` : ''}
                         
                         ${generalData.physicalAppearance ? `
                         <div class="detail-section">
-                            <h3>Physical Appearance</h3>
+                            <h3>${t('dataLibrary.physicalAppearance')}</h3>
                             <p>${generalData.physicalAppearance}</p>
                         </div>
                         ` : ''}
                         
                         ${generalData.additionalData ? `
                         <div class="detail-section">
-                            <h3>Additional Information</h3>
-                            <p><strong>Age:</strong> ${generalData.additionalData.age || 'N/A'}</p>
-                            <p><strong>Specialty:</strong> ${generalData.additionalData.specialty || 'N/A'}</p>
-                            <p><strong>Favorite Weapon:</strong> ${generalData.additionalData.favoriteWeapon || 'N/A'}</p>
-                            ${generalData.additionalData.background ? `<p><strong>Background:</strong> ${generalData.additionalData.background}</p>` : ''}
+                            <h3>${t('dataLibrary.additionalInfo')}</h3>
+                            <p><strong>${t('dataLibrary.age')}</strong> ${generalData.additionalData.age || 'N/A'}</p>
+                            <p><strong>${t('dataLibrary.specialty')}</strong> ${generalData.additionalData.specialty || 'N/A'}</p>
+                            <p><strong>${t('dataLibrary.favoriteWeapon')}</strong> ${generalData.additionalData.favoriteWeapon || 'N/A'}</p>
+                            ${generalData.additionalData.background ? `<p><strong>${t('dataLibrary.background')}</strong> ${generalData.additionalData.background}</p>` : ''}
                         </div>
                         ` : ''}
                     </div>
@@ -640,7 +641,7 @@ class Game {
         
         // Determine border color based on whether it's own or enemy
         const borderColor = isPlayerProvince ? '#4ade80' : '#ff4a4a';
-        const ownerLabel = isPlayerProvince ? 'Own' : 'Enemy';
+        const ownerLabel = isPlayerProvince ? t('classic.own') : t('classic.enemy');
         
         // Obtener imagen de la provincia
         const provinceIndex = kingdom.provinces.findIndex(p => p.id === provinceId);
@@ -649,7 +650,7 @@ class Game {
         // Create miniatures of present generals
         let generalsList = '';
         if (generalsAtProvince.length > 0) {
-            generalsList = '<div class="province-detail-generals"><h4>Present Generals:</h4><div class="province-generals-list">';
+            generalsList = '<div class="province-detail-generals"><h4>' + t('classic.presentGenerals') + '</h4><div class="province-generals-list">';
             generalsAtProvince.forEach(general => {
                 const generalImageUrl = getGeneralImage(general.id);
                 generalsList += `
@@ -668,13 +669,13 @@ class Game {
         if (isEnemy && availablePlayerGenerals.length > 0) {
             quickActionZone = `
                 <div class="quick-action-zone">
-                    <h4>Quick Assign Attack</h4>
+                    <h4>${t('classic.quickAssignAttack')}</h4>
                     <div class="quick-action-list">
-                        ${availablePlayerGenerals.map(general => `
+                        ${availablePlayerGenerals.map(g => `
                             <div class="quick-action-item">
-                                <span>${general.name}</span>
-                                <button class="quick-action-btn btn btn-primary" data-general-id="${general.id}">
-                                    Attack ${province.name}
+                                <span>${g.name}</span>
+                                <button class="quick-action-btn btn btn-primary" data-general-id="${g.id}">
+                                    ${t('classic.attackProvince', { name: province.name })}
                                 </button>
                             </div>
                         `).join('')}
@@ -684,13 +685,13 @@ class Game {
         } else if (!isEnemy && availablePlayerGenerals.length > 0) {
             quickActionZone = `
                 <div class="quick-action-zone">
-                    <h4>Quick Assign Defense</h4>
+                    <h4>${t('classic.quickAssignDefense')}</h4>
                     <div class="quick-action-list">
-                        ${availablePlayerGenerals.map(general => `
+                        ${availablePlayerGenerals.map(g => `
                             <div class="quick-action-item">
-                                <span>${general.name}</span>
-                                <button class="quick-action-btn btn btn-primary" data-general-id="${general.id}">
-                                    Defend ${province.name}
+                                <span>${g.name}</span>
+                                <button class="quick-action-btn btn btn-primary" data-general-id="${g.id}">
+                                    ${t('classic.defendProvince', { name: province.name })}
                                 </button>
                             </div>
                         `).join('')}
@@ -704,7 +705,7 @@ class Game {
                 <h2>${province.name}</h2>
                 <div class="kingdom-detail-badges">
                     <span class="kingdom-owner-badge" style="background-color: ${borderColor};">${ownerLabel}</span>
-                    ${province.isCapital ? '<span class="kingdom-theme">Capital</span>' : ''}
+                    ${province.isCapital ? '<span class="kingdom-theme">' + t('classic.capital') + '</span>' : ''}
                 </div>
             </div>
             
@@ -712,24 +713,24 @@ class Game {
             </div>
             
             <div class="kingdom-detail-stats">
-                <h3>Statistics</h3>
+                <h3>${t('classic.statistics')}</h3>
                 <div class="stats-grid">
                     <div class="stat-item">
-                        <span class="stat-label">Kingdom:</span>
+                        <span class="stat-label">${t('classic.kingdom')}</span>
                         <span class="stat-value">${kingdom.name}</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">HP:</span>
+                        <span class="stat-label">${t('dataLibrary.hp')}</span>
                         <span class="stat-value">${province.hp}/${province.maxHp}</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">Generals:</span>
+                        <span class="stat-label">${t('classic.generalsLabel')}</span>
                         <span class="stat-value">${generalsAtProvince.length}</span>
                     </div>
                 </div>
                 <div style="margin-top: 15px;">
                     <div class="stat">
-                        <span class="stat-label">HP:</span>
+                        <span class="stat-label">${t('dataLibrary.hp')}</span>
                         <span class="stat-value">${province.hp}/${province.maxHp}</span>
                     </div>
                     <div class="hp-bar">
@@ -796,9 +797,9 @@ class Game {
         const btn = this.getEl('generateInitialStoryBtn');
         const originalText = btn.textContent;
         btn.disabled = true;
-        btn.textContent = 'Generando...';
+        btn.textContent = t('classic.generatingBtn');
         
-        this.showLoading('Generating initial story...');
+        this.showLoading(t('classic.loadingGenerateStory'));
         try {
             const gameState = this.gameMode.getGameState();
             const story = await generateStory(gameState, []);
@@ -807,10 +808,10 @@ class Game {
             btn.style.display = 'none';
         } catch (error) {
             console.error('Error generating story:', error);
-            this.addToHistory('The kingdom awakens. The adventure begins...', [], 0);
+            this.addToHistory(t('classic.kingdomAwakens'), [], 0);
             btn.disabled = false;
             btn.textContent = originalText;
-            alert('Error generating story. Check your AI configuration.');
+            alert(t('classic.errorGeneratingStory'));
         } finally {
             this.hideLoading();
         }
@@ -820,7 +821,7 @@ class Game {
         if (this.isProcessing) return;
         
         this.isProcessing = true;
-        this.showLoading('Processing turn...');
+        this.showLoading(t('classic.loadingProcessingTurn'));
         
         try {
             // Process turn through game mode
@@ -835,7 +836,7 @@ class Game {
             }
             
             // Generate new story
-            this.showLoading('Generating story...');
+            this.showLoading(t('classic.loadingGeneratingStory'));
             const gameState = this.gameMode.getGameState();
             const story = await generateStory(gameState, this.turnEvents);
             const dayNumber = gameState.turn + 1;
@@ -851,7 +852,7 @@ class Game {
             
         } catch (error) {
             console.error('Error processing turn:', error);
-            alert('Error processing turn: ' + error.message);
+            alert(t('classic.errorProcessingTurn', { message: error.message }));
         } finally {
             this.hideLoading();
             this.isProcessing = false;
@@ -863,11 +864,11 @@ class Game {
         gameState.gameOver = true;
         gameState.winner = result.winner;
         
-        let message = result.message || 'The game has ended.';
+        let message = result.message || t('classic.gameEnded');
         if (result.winner === 'player') {
-            message = 'Victory! You have conquered all kingdoms.';
+            message = t('classic.victory');
         } else if (result.loser === 'player') {
-            message = 'Defeat. Your kingdom has fallen.';
+            message = t('classic.defeat');
         }
         
         this.addToHistory(`\n\n=== ${message} ===\n\n`, [], null);
@@ -1013,14 +1014,14 @@ class Game {
         const hpPercent = (general.hp / general.maxHp) * 100;
         const lovePercent = general.love;
         
-        let statusText = 'Free';
+        let statusText = t('classic.free');
         let statusClass = '';
         if (general.status === 'captured') {
-            statusText = 'Captured';
+            statusText = t('classic.captured');
             statusClass = 'captured';
         }
         if (general.status === 'slave') {
-            statusText = 'Slave';
+            statusText = t('classic.slave');
             statusClass = 'slave';
         }
         
@@ -1183,7 +1184,7 @@ class Game {
         container.innerHTML = '';
         
         if (this.playerActions.length === 0) {
-            container.innerHTML = '<p>No hay acciones asignadas. Selecciona una general para asignar una acción.</p>';
+            container.innerHTML = '<p>' + t('classic.noActionsAssigned') + '</p>';
             return;
         }
         
@@ -1194,26 +1195,21 @@ class Game {
             const item = document.createElement('div');
             item.className = 'action-item';
             
-            let targetName = 'Capital';
+            let targetName = t('classic.capital');
             if (action.targetId) {
                 const province = this.gameMode.getProvince(action.targetId);
                 if (province) targetName = province.name;
             }
             
-            const actionNames = {
-                attack: 'Attack',
-                defend: 'Defend',
-                rest: 'Rest',
-                date: 'Date',
-                train: 'Train'
-            };
+            const actionKey = 'classic.action_' + action.actionType;
+            const actionLabel = t(actionKey);
             
             item.innerHTML = `
                 <div class="action-info">
-                    <div class="action-type">${general.name}: ${actionNames[action.actionType]}</div>
+                    <div class="action-type">${general.name}: ${actionLabel}</div>
                     <div class="action-target">${targetName}</div>
                 </div>
-                <button onclick="game.removeAction(${index})">Remove</button>
+                <button onclick="game.removeAction(${index})">${t('classic.remove')}</button>
             `;
             
             container.appendChild(item);
@@ -1222,7 +1218,7 @@ class Game {
 
     selectGeneral(general) {
         if (!this.gameMode.isGeneralAvailable(general)) {
-            alert('This general is not available');
+            alert(t('classic.generalNotAvailable'));
             return;
         }
         
@@ -1235,7 +1231,7 @@ class Game {
         const modalTitle = this.getEl('modalTitle');
         const modalBody = this.getEl('modalBody');
         
-        modalTitle.textContent = `Assign Action - ${general.name}`;
+        modalTitle.textContent = t('classic.assignActionTitle', { name: general.name });
         
         const kingdom = this.gameMode.getKingdom(general.kingdom);
         const capital = this.gameMode.getCapital(kingdom);
@@ -1245,25 +1241,25 @@ class Game {
         
         let html = '<form class="action-form" id="actionForm">';
         html += '<div class="form-group">';
-        html += '<label>Action Type:</label>';
+        html += '<label>' + t('classic.actionTypeLabel') + '</label>';
         html += '<select id="actionType" required>';
-        html += '<option value="">Select an action</option>';
-        html += '<option value="attack">Attack Province</option>';
-        html += '<option value="defend">Defend Province</option>';
-        html += '<option value="rest">Rest (Capital)</option>';
-        html += '<option value="date">Date (Capital)</option>';
-        html += '<option value="train">Train (Capital)</option>';
+        html += '<option value="">' + t('classic.selectAction') + '</option>';
+        html += '<option value="attack">' + t('classic.actionType_attack') + '</option>';
+        html += '<option value="defend">' + t('classic.actionType_defend') + '</option>';
+        html += '<option value="rest">' + t('classic.actionType_restCapital') + '</option>';
+        html += '<option value="date">' + t('classic.actionType_dateCapital') + '</option>';
+        html += '<option value="train">' + t('classic.actionType_trainCapital') + '</option>';
         html += '</select>';
         html += '</div>';
         
         html += '<div class="form-group" id="targetGroup" style="display:none;">';
-        html += '<label>Target Province:</label>';
+        html += '<label>' + t('classic.targetProvince') + '</label>';
         html += '<select id="targetProvince"></select>';
         html += '</div>';
         
         html += '<div class="form-actions">';
-        html += '<button type="submit" class="btn btn-primary">Assign</button>';
-        html += '<button type="button" class="btn btn-secondary" onclick="game.closeModal()">Cancel</button>';
+        html += '<button type="submit" class="btn btn-primary">' + t('classic.assignBtn') + '</button>';
+        html += '<button type="button" class="btn btn-secondary" onclick="game.closeModal()">' + t('classic.cancel') + '</button>';
         html += '</div>';
         html += '</form>';
         
@@ -1307,7 +1303,7 @@ class Game {
         if (['attack', 'defend'].includes(actionType)) {
             targetId = this.getEl('targetProvince').value;
             if (!targetId) {
-                alert('Select a province');
+                alert(t('classic.selectProvince'));
                 return;
             }
         } else {
@@ -1347,9 +1343,9 @@ class Game {
         this.selectedGeneral = null;
     }
 
-    showLoading(text = 'Loading...') {
+    showLoading(text) {
         const modal = this.getEl('loadingModal');
-        this.getEl('loadingText').textContent = text;
+        this.getEl('loadingText').textContent = text ?? t('classic.loadingText');
         modal.classList.add('active');
     }
 
@@ -1375,7 +1371,7 @@ class Game {
         if (dayNumber !== null) {
             const dayTitle = document.createElement('h3');
             dayTitle.className = 'day-title';
-            dayTitle.textContent = `=== Day ${dayNumber} ===`;
+            dayTitle.textContent = t('classic.dayTitle', { day: dayNumber });
             entry.appendChild(dayTitle);
         }
         
@@ -1392,7 +1388,7 @@ class Game {
             summaryDiv.className = 'technical-summary';
             
             const summaryTitle = document.createElement('h4');
-            summaryTitle.textContent = '--- Technical Summary ---';
+            summaryTitle.textContent = t('classic.technicalSummary');
             summaryDiv.appendChild(summaryTitle);
             
             const summaryContent = document.createElement('pre');
@@ -1589,7 +1585,7 @@ class Game {
         const allProvinces = this.gameMode.getAllProvinces();
         allProvinces.forEach(province => {
             const kingdom = this.gameMode.getKingdom(province.kingdom);
-            summary.push(`  - ${province.name}: HP ${province.hp}/${province.maxHp}, Owner: ${kingdom ? kingdom.name : province.kingdom}${province.isCapital ? ' (Capital)' : ''}`);
+            summary.push(`  - ${province.name}: HP ${province.hp}/${province.maxHp}, Owner: ${kingdom ? kingdom.name : province.kingdom}${province.isCapital ? ' (' + t('classic.capital') + ')' : ''}`);
         });
         summary.push('');
         
@@ -1597,9 +1593,9 @@ class Game {
         const allGenerals = this.gameMode.getAllGenerals();
         allGenerals.forEach(general => {
             const kingdom = this.gameMode.getKingdom(general.kingdom);
-            let statusText = 'Free';
-            if (general.status === 'captured') statusText = 'Captured';
-            if (general.status === 'slave') statusText = 'Slave';
+            let statusText = t('classic.free');
+            if (general.status === 'captured') statusText = t('classic.captured');
+            if (general.status === 'slave') statusText = t('classic.slave');
             summary.push(`  - ${general.name}: HP ${general.hp}/${general.maxHp}, Love: ${general.love}, Strength: ${general.strength}, Status: ${statusText}, Kingdom: ${kingdom ? kingdom.name : general.kingdom}`);
         });
         
@@ -1611,7 +1607,7 @@ class Game {
         // Add gameMode to saved state
         state.gameMode = this.currentGameModeId;
         localStorage.setItem('ntrAdvGameState', JSON.stringify(state));
-        alert('Game saved');
+        alert(t('classic.gameSaved'));
     }
 
     loadGame() {
@@ -1621,16 +1617,16 @@ class Game {
                 const state = JSON.parse(saved);
                 if (this.gameMode.deserializeState(state)) {
                     this.renderAll();
-                    alert('Game loaded');
+                    alert(t('classic.gameLoaded'));
                 } else {
-                    alert('Error loading saved game');
+                    alert(t('classic.errorLoadingGame'));
                 }
             } catch (e) {
                 console.error('Error loading game:', e);
-                alert('Error loading saved game');
+                alert(t('classic.errorLoadingGame'));
             }
         } else {
-            alert('No saved game found');
+            alert(t('classic.noSavedGame'));
         }
     }
 }

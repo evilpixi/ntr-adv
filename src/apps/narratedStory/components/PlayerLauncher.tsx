@@ -13,6 +13,7 @@ import {
   GiKing,
   GiHourglass,
 } from '@/theme/icons'
+import { withBaseUrl } from '@/utils/assetUrl'
 import { useNarratedStoryTranslation } from '../i18n'
 import type { PlayerProfile, GoverningStyle, GenderKey, GenitaliaKey, NobleTitleKey, PenisSizeKey, BustSizeKey } from '../types'
 import '../narratedStory.css'
@@ -86,7 +87,7 @@ export const PlayerLauncher: ComponentType<PlayerLauncherProps> = ({ onComplete 
   }
 
   const characterImageId = DEFAULT_NAME_BY_GENDER[gender].toLowerCase()
-  const characterImageSrc = `/images/generals/${characterImageId}.png`
+  const characterImageSrc = withBaseUrl(`/images/generals/${characterImageId}.png`) ?? `/images/generals/${characterImageId}.png`
   const handlePortraitError = useCallback(() => {
     setPortraitError(true)
     setPortraitLoading(false)

@@ -181,6 +181,10 @@
   color: var(--color-amber);
   font-weight: 600;
 }
+.app-card-badge-development {
+  color: var(--color-primary, #4a9);
+  font-weight: 600;
+}
 
 .shell-actions {
   display: flex;

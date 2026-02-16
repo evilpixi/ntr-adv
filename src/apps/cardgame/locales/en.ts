@@ -8,6 +8,7 @@ export const en: Partial<Record<CardGameKey, string>> = {
   'cardgame.cardType.item': 'Item',
   'cardgame.cardType.soldier': 'Soldier',
   'cardgame.card.hp': 'HP',
+  'cardgame.card.attack': 'ATK',
   'cardgame.card.strength': 'Strength',
   'cardgame.card.agility': 'Agility',
   'cardgame.card.intelligence': 'Intelligence',

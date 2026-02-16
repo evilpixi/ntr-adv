@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 import type { Place, Personaje } from '../types'
 import { useNarratedStoryTranslation } from '../i18n'
 import { GiCastle } from '@/theme/icons'
+import { withBaseUrl } from '@/utils/assetUrl'
 
 interface PlacesViewProps {
   places: Place[]
@@ -33,7 +34,7 @@ function CharacterImage({
 
   return (
     <img
-      src={src}
+      src={withBaseUrl(src) ?? src}
       alt=""
       className={`ns-place-char-avatar ${className}`.trim()}
       loading="lazy"

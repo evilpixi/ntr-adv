@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { withBaseUrl } from '@/utils/assetUrl'
 
 interface DataLibraryImageProps {
   imageUrl: string | null
@@ -7,7 +8,8 @@ interface DataLibraryImageProps {
 }
 
 export function DataLibraryImage({ imageUrl, alt, className }: DataLibraryImageProps): ReactNode {
-  if (!imageUrl) {
+  const src = withBaseUrl(imageUrl)
+  if (!src) {
     return (
       <div className={`${className} placeholder`} aria-hidden>
         {alt.charAt(0).toUpperCase()}
@@ -20,7 +22,7 @@ export function DataLibraryImage({ imageUrl, alt, className }: DataLibraryImageP
 
   return (
     <img
-      src={imageUrl}
+      src={src}
       alt={alt}
       className={className}
       onError={(e) => {

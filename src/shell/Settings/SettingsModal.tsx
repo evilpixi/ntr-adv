@@ -104,7 +104,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
               >
                 {RESOLUTION_OPTIONS.map(({ value, label }) => (
                   <option key={value} value={value}>
-                    {label}
+                    {value === 'auto' ? t('settings.resolution.auto', lang) : label}
                   </option>
                 ))}
               </select>
@@ -181,9 +181,9 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                 onChange={(e) => setLanguage(e.target.value as typeof settings.language)}
                 style={{ maxWidth: '10rem' }}
               >
-                {LANGUAGE_OPTIONS.map(({ value, label }) => (
+                {LANGUAGE_OPTIONS.map(({ value }) => (
                   <option key={value} value={value}>
-                    {label}
+                    {value === 'es' ? t('settings.langEs', lang) : t('settings.langEn', lang)}
                   </option>
                 ))}
               </select>
