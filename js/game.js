@@ -79,9 +79,10 @@ class Game {
     }
     
     setupHotReload() {
-        // Connect to Server-Sent Events for hot reload
-        if (typeof EventSource !== 'undefined') {
-            const eventSource = new EventSource('/api/hot-reload');
+        // Solo en desarrollo: el servidor local expone /api/hot-reload; en GitHub Pages no existe
+        const isDev = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        if (!isDev || typeof EventSource === 'undefined') return;
+        const eventSource = new EventSource('/api/hot-reload');
             
             eventSource.onmessage = (event) => {
                 if (event.data === 'reload') {
@@ -98,7 +99,6 @@ class Game {
                 // Just close connection without showing error in console
                 eventSource.close();
             };
-        }
     }
 
     initializeUI() {

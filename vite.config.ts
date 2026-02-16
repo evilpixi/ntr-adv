@@ -40,9 +40,29 @@ export default defineConfig(({ mode }) => {
   const buildForElectron = process.env.BUILD_ELECTRON === '1'
   // GitHub Pages sirve en /<repo-name>/; en CI se setea VITE_BASE (ej. '/ntr-adv/')
   const base = buildForElectron ? './' : (process.env.VITE_BASE || '/')
+
+  // Copiar images/ de la raíz al dist (las imágenes están en repo en images/, no en public/)
+  const copyRootImages = {
+    name: 'copy-root-images',
+    closeBundle() {
+      const src = path.join(projectRoot, 'images')
+      const outDir = path.join(projectRoot, 'dist', 'images')
+      if (!fs.existsSync(src)) return
+      const copy = (from: string, to: string) => {
+        if (!fs.existsSync(from)) return
+        fs.mkdirSync(path.dirname(to), { recursive: true })
+        fs.cpSync(from, to, { recursive: true })
+      }
+      const dirs = fs.readdirSync(src, { withFileTypes: true })
+      for (const d of dirs) {
+        if (d.isDirectory()) copy(path.join(src, d.name), path.join(outDir, d.name))
+      }
+    },
+  }
+
   return {
     base,
-    plugins: [react()],
+    plugins: [react(), copyRootImages],
     define: {
       __ENV_FALLBACK__: JSON.stringify(envFallback),
       __BASE_URL__: JSON.stringify(base),
