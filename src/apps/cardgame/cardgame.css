@@ -1,0 +1,246 @@
+/**
+ * Card Game app — layout y cartas TCG.
+ */
+
+.cardgame-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.cardgame-content {
+  padding: var(--space-lg);
+  background: var(--color-bg);
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.cardgame-title {
+  margin: 0 0 var(--space-lg);
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.cardgame-main {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* —— Vista de cartas (estilo TCG) —— */
+.cg-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.cg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-lg);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+@media (min-width: 480px) {
+  .cg-grid {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
+}
+
+@media (min-width: 768px) {
+  .cg-grid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+}
+
+.cg-card {
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.cg-card-frame {
+  aspect-ratio: 2.5 / 3.5;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 3px solid var(--color-border);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.cg-card:hover .cg-card-frame {
+  transform: translateY(-4px);
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.2),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.cg-card[data-card-type="hero"] .cg-card-frame {
+  border-color: var(--color-accent);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    0 0 0 1px var(--color-accent),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.cg-card[data-card-type="magic"] .cg-card-frame {
+  border-color: #8b5cf6;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    0 0 0 1px #8b5cf6,
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.cg-card[data-card-type="item"] .cg-card-frame {
+  border-color: #22c55e;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    0 0 0 1px #22c55e,
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.cg-card[data-card-type="soldier"] .cg-card-frame {
+  border-color: #ef4444;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    0 0 0 1px #ef4444,
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.cg-card-art-wrap {
+  flex: 0 0 68%;
+  min-height: 0;
+  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+}
+
+.cg-card-art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cg-card-art.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
+  color: var(--color-text-muted);
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.cg-card-art.placeholder.magic {
+  background: linear-gradient(180deg, #3b2a5c 0%, #5b3d8a 100%);
+  color: #c4b5fd;
+}
+
+.cg-card-art.placeholder.item {
+  background: linear-gradient(180deg, #14532d 0%, #166534 100%);
+  color: #86efac;
+}
+
+.cg-card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  background: rgba(0, 0, 0, 0.25);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.cg-card-type {
+  font-size: 1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.cg-card-name {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cg-card-body,
+.cg-card-desc {
+  padding: var(--space-xs) var(--space-sm);
+  font-size: 0.7rem;
+  line-height: 1.35;
+  color: var(--color-text-muted);
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.cg-card-desc {
+  margin: 0;
+}
+
+.cg-card-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.cg-card-stats span {
+  white-space: nowrap;
+  font-size: 0.7rem;
+}
+
+.cg-card-meta {
+  margin: 0 0 2px;
+  font-size: 0.65rem;
+  opacity: 0.9;
+}
+
+.cg-card-relationship {
+  margin: 0 0 4px;
+  font-style: italic;
+  font-size: 0.65rem;
+}
+
+.cg-card-abilities {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.cg-card-abilities li {
+  margin: 1px 0;
+}
+
+.cg-empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.cg-places-section .section-title {
+  margin-bottom: var(--space-sm);
+}
+
+.cg-places-list {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.cg-places-list li {
+  margin: var(--space-xs) 0;
+}

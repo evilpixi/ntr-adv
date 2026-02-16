@@ -1,23 +1,73 @@
 {
   "name": "ntr-adv",
   "version": "1.0.0",
-  "description": "Juego web de aventura gráfica basado en texto con sistema de reinos y generales",
-  "main": "server.js",
+  "description": "NTR Adventure - shell React con menú principal y apps (Phaser opcional por app)",
+  "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js",
-    "build": "node scripts/inject-env.js"
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "start": "vite preview --port 5173",
+    "mcp": "tsx mcp-server/index.ts",
+    "cap:init": "capacitor init",
+    "cap:add:android": "capacitor add android",
+    "cap:add:ios": "capacitor add ios",
+    "build:electron": "tsc -b && cross-env BUILD_ELECTRON=1 vite build",
+    "export:win": "node scripts/export-win.js",
+    "electron:build": "npm run build:electron && electron-builder --win"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.1.2",
+    "@langchain/core": "^1.1.24",
+    "@langchain/langgraph": "^1.1.4",
+    "@langchain/openai": "^1.2.7",
+    "chokidar": "^5.0.0",
+    "dexie": "^4.3.0",
+    "phaser": "^3.80.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-icons": "^5.5.0",
+    "react-markdown": "^10.1.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2",
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "@types/node": "^22.9.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "cross-env": "^7.0.3",
+    "dotenv": "^16.3.1",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
+    "tsx": "^4.19.2",
+    "typescript": "~5.6.2",
+    "vite": "^5.4.10",
+    "zod": "^3.24.0"
   },
   "keywords": [
     "game",
     "strategy",
-    "adventure"
+    "adventure",
+    "react",
+    "phaser"
   ],
   "author": "",
   "license": "ISC",
-  "devDependencies": {
-    "chokidar": "^3.6.0",
-    "dotenv": "^16.3.1",
-    "http-server": "^14.1.1"
+  "build": {
+    "appId": "com.ntr-adv.app",
+    "productName": "NTR Adventure",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "target": "portable",
+      "icon": null
+    }
   }
 }

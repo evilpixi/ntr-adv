@@ -1,0 +1,38 @@
+@import "./theme/tokens.css";
+@import "./theme/components.css";
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  color: var(--color-text);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Quitar el patrón de líneas oblicuas de css/style.css (body::before) en Narrated Story */
+body[data-current-app="narrated-story"]::before {
+  display: none !important;
+}
+
+#root {
+  height: 100%;
+  min-height: 0;
+}
+
+/* Escala de UI global (desde settings) */
+html[data-ui-scale="90"] { font-size: 90%; }
+html[data-ui-scale="100"] { font-size: 100%; }
+html[data-ui-scale="110"] { font-size: 110%; }
+html[data-ui-scale="125"] { font-size: 125%; }

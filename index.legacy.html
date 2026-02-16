@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NTR Adventure - Strategy Game</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Welcome View (visible by default) -->
+    <div id="welcomeView" class="welcome-view"></div>
+
+    <!-- Game Container (hidden by default) -->
+    <div id="gameContainer" class="game-container hidden">
+        <!-- Title Bar with Action Buttons -->
+        <div class="title-bar">
+            <h1 class="game-title">NTR Adventure</h1>
+            <div class="title-bar-actions">
+                <button id="backToWelcomeBtn" class="btn btn-secondary">Volver al Inicio</button>
+                <button id="generateInitialStoryBtn" class="btn btn-primary">Generate Initial Story</button>
+                <button id="nextTurnBtn" class="btn btn-primary">Next Turn</button>
+                <button id="saveGameBtn" class="btn btn-secondary">Save Game</button>
+                <button id="loadGameBtn" class="btn btn-secondary">Load Game</button>
+            </div>
+        </div>
+
+        <div class="game-container-inner">
+        <!-- Information Panel -->
+        <div class="panel info-panel">
+            <div class="info-tabs">
+                <button class="tab-btn active" data-tab="kingdoms">Kingdoms</button>
+                <button class="tab-btn" data-tab="generals">Generals</button>
+                <button class="tab-btn" data-tab="provinces">Provinces</button>
+                <button class="tab-btn" data-tab="actions">Actions</button>
+                <button class="tab-btn" data-tab="history">History</button>
+            </div>
+            
+            <!-- Tab: Kingdoms -->
+            <div class="tab-content active" id="tab-kingdoms">
+                <div class="kingdoms-list" id="kingdomsList"></div>
+            </div>
+
+            <!-- Tab: Generals -->
+            <div class="tab-content" id="tab-generals">
+                <div class="generals-section">
+                    <h3>Your Generals</h3>
+                    <div class="generals-list" id="playerGeneralsList"></div>
+                </div>
+                <div class="generals-section">
+                    <h3>Enemy Generals</h3>
+                    <div class="generals-list" id="enemyGeneralsList"></div>
+                </div>
+            </div>
+
+            <!-- Tab: Provinces -->
+            <div class="tab-content" id="tab-provinces">
+                <div class="provinces-map" id="provincesMap"></div>
+            </div>
+
+            <!-- Tab: Actions -->
+            <div class="tab-content" id="tab-actions">
+                <div class="actions-panel" id="actionsPanel">
+                    <p>Select a general to assign an action</p>
+                    <div class="assigned-actions" id="assignedActions"></div>
+                </div>
+            </div>
+
+            <!-- Tab: History -->
+            <div class="tab-content" id="tab-history">
+                <div class="history-content" id="historyContent">
+                    <div class="history-entry">
+                        <p class="welcome-message">Welcome to the game. The kingdom awaits you...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <!-- Modal for assigning actions -->
+    <div class="modal" id="actionModal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h3 id="modalTitle">Assign Action</h3>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- Loading modal -->
+    <div class="modal" id="loadingModal">
+        <div class="modal-content">
+            <div class="loading-spinner"></div>
+            <p id="loadingText">Loading...</p>
+        </div>
+    </div>
+
+    <!-- Modal for detailed kingdom information -->
+    <div class="modal" id="kingdomDetailModal">
+        <div class="modal-content kingdom-detail-modal">
+            <span class="close-modal">&times;</span>
+            <div id="kingdomDetailContent"></div>
+        </div>
+    </div>
+
+    <!-- Modal for detailed general information -->
+    <div class="modal" id="generalDetailModal">
+        <div class="modal-content general-detail-modal">
+            <span class="close-modal">&times;</span>
+            <div id="generalDetailContent"></div>
+        </div>
+    </div>
+
+    <!-- Modal for detailed province information -->
+    <div class="modal" id="provinceDetailModal">
+        <div class="modal-content province-detail-modal">
+            <span class="close-modal">&times;</span>
+            <div id="provinceDetailContent"></div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        window.__ENV__ = {
+            OPENAI_API_KEY: '',
+            OPENAI_MODEL: 'gpt-4',
+            OPENAI_BASE_URL: 'https://api.openai.com/v1',
+            DEEPSEEK_API_KEY: '',
+            DEEPSEEK_MODEL: 'deepseek-chat',
+            DEEPSEEK_BASE_URL: 'https://api.deepseek.com/v1',
+            GROK_API_KEY: '',
+            GROK_MODEL: 'grok-beta',
+            GROK_BASE_URL: 'https://api.x.ai/v1',
+            OLLAMA_BASE_URL: 'http://localhost:11434',
+            OLLAMA_MODEL: 'llama2',
+            DEFAULT_AI_SERVICE: 'openai',
+            GAME_LANGUAGE: 'es'
+        };
+    </script>
+    <script type="module" src="js/dataLoader.js"></script>
+    <script type="module" src="js/config.js"></script>
+    <script type="module" src="js/gameState.js"></script>
+    <script type="module" src="js/combat.js"></script>
+    <script type="module" src="js/ai.js"></script>
+    <script type="module" src="js/aiIntegration.js"></script>
+    <script type="module" src="js/apps/index.js"></script>
+    <script type="module" src="js/welcome.js"></script>
+    <script type="module" src="js/game.js"></script>
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

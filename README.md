@@ -15,11 +15,7 @@ Un juego web de aventura gráfica basado en texto con sistema de reinos, general
 
 - Node.js (v14 o superior) y npm
 - Navegador web moderno (Chrome, Firefox, Safari, Edge)
-- API keys para al menos uno de los servicios de IA soportados:
-  - OpenAI
-  - DeepSeek
-  - Grok (xAI)
-  - Ollama (modelo local)
+- **Solo si quieres usar el chat de Narrated Story**: API key de un proveedor de IA. Se configura dentro de la app en **Ajustes → Chat con IA** (OpenAI, DeepSeek, Grok u Ollama). El resto del juego funciona sin configurar nada.
 
 ## 🚀 Instalación
 
@@ -34,38 +30,13 @@ cd ntr-adv
 npm install
 ```
 
-3. Copia el archivo de ejemplo de variables de entorno:
-```bash
-cp .env.example .env
-```
+3. Arranca el proyecto (todo en **http://localhost:5173**):
+   - **Desarrollo**: `npm run dev` → Vite (hot reload).
+   - **Producción**: `npm run build` y luego `npm start` → sirve la carpeta `dist/` con Vite preview.
 
-4. Edita el archivo `.env` y agrega tus API keys:
-```env
-OPENAI_API_KEY=tu_api_key_aqui
-# O el servicio de IA que prefieras usar
-DEFAULT_AI_SERVICE=openai
-```
+4. Abre **http://localhost:5173** en el navegador.
 
-5. Inicia el servidor de desarrollo:
-```bash
-npm start
-```
-
-6. Accede a `http://localhost:3000` en tu navegador
-
-El servidor automáticamente:
-- Inyecta las variables de entorno al frontend
-- Sirve los archivos estáticos con headers de no-cache
-- **Hot Reload**: Recarga automáticamente la página cuando detecta cambios en archivos JS, CSS, HTML o data/
-- Observa cambios en tiempo real usando Server-Sent Events
-
-### Hot Reload
-
-El servidor incluye hot reload automático:
-- Detecta cambios en archivos `.js`, `.css`, `.html` y archivos en `data/`
-- Recarga automáticamente la página en el navegador
-- No necesitas refrescar manualmente después de hacer cambios
-- Los archivos se sirven con headers de no-cache para evitar problemas de caché
+Proyecto **standalone**: no hace falta ningún servidor propio. El chat de Narrated Story llama a la IA desde el navegador; cada usuario introduce su API key en **Ajustes → Chat con IA** (se guarda en localStorage).
 
 ## ⚙️ Configuración
 
@@ -166,6 +137,89 @@ Edita `data/ai-config.js` para configurar:
 - Las plantillas de prompts
 - Los parámetros de generación
 
+## 🔌 Tools stateless e interfaz MCP
+
+Las **tools** están repartidas así:
+
+- **`tools/`** (raíz): tools globales (shell + cardgame): definiciones, `ToolContext`, `runTool(name, args, context)`. Soporte MCP general del proyecto.
+- **`src/tools/browserContext.ts`**: implementación de `ToolContext` para el navegador (listApps, getAppInfo, getToolList, cardgame stubs). Usar `createBrowserToolContext()` cuando el frontend necesite el contexto global.
+- **`src/apps/narratedStory/tools/`**: tools **solo** de la app Narrated Story: partida y stats. Definiciones en `definitions.ts`, interfaz `NarratedStoryToolContext` en `context.ts`, ejecutor en `run.ts`, contexto navegador en `browserContext.ts` (solo partida/stats, sin tools globales). Se importa desde `@/apps/narratedStory/tools`. **Cuando se ejecuta narratedStory, a la IA solo se le envían estas 4 tools** (no ntr_*, ni cardgame_*).
+
+Un **contexto** (Node con `mcp-data/`, o navegador con IndexedDB) implementa la I/O. Así puedes:
+
+- **En cada "siguiente turno"** (en la app o en un backend): llamar al LLM con las tools; cuando el LLM devuelva `tool_calls`, ejecutar por cada una `runNarratedStoryTool` si el nombre empieza por `narrated_story_`, si no `runTool`. No hace falta un servidor MCP para esto.
+- **Opcional: servidor MCP** para Cursor u otro cliente: arranca un proceso que expone todas las tools por stdio usando el contexto Node (`mcp-data/`).
+
+### Uso en "siguiente turno" (app o backend)
+
+**Solo en la app Narrated Story** (la IA solo ve las 4 tools de partida/stats):
+
+```ts
+import { runNarratedStoryTool, createNarratedStoryBrowserContext } from '@/apps/narratedStory/tools'
+
+const context = createNarratedStoryBrowserContext() // solo NarratedStoryToolContext
+for (const call of response.tool_calls) {
+  const result = await runNarratedStoryTool(call.function.name, JSON.parse(call.function.arguments ?? '{}'), context)
+  // Enviar result.text de vuelta al modelo como tool result
+}
+```
+
+**Si mezclas tools globales y de narrated story** (p. ej. un backend que atiende ambas), combina contextos: en Node usa `createNodeContext()` desde `mcp-server/context-node.ts` (implementa `ToolContext` y `NarratedStoryToolContext`). En navegador puedes componer `createBrowserToolContext()` con `createNarratedStoryBrowserContext()` y pasar el objeto combinado a `runTool` y `runNarratedStoryTool` según el prefijo del nombre.
+
+### Arrancar el servidor MCP
+
+```bash
+npm run mcp
+```
+
+El servidor usa transporte **stdio**: se queda escuchando en stdin/stdout. Para usarlo desde Cursor, configúralo como servidor MCP local.
+
+### Configurar en Cursor
+
+1. Abre **Cursor Settings** → **MCP** (o el archivo de configuración MCP de Cursor).
+2. Añade un servidor con **stdio**, por ejemplo:
+
+```json
+{
+  "mcpServers": {
+    "ntr-adv": {
+      "command": "npm",
+      "args": ["run", "mcp"],
+      "cwd": "C:\\ruta\\completa\\a\\ntr-adv"
+    }
+  }
+}
+```
+
+Ajusta `cwd` a la ruta absoluta de tu clon del proyecto. Así Cursor arranca el proceso y se comunica por stdio.
+
+### Directorio de datos
+
+Las tools que leen/escriben datos usan por defecto el directorio `mcp-data/` en la raíz del proyecto (o la variable de entorno `NTR_MCP_DATA`). Por ejemplo:
+
+- **narrated-story**: `mcp-data/narrated-story/` (partidas, `current.json`, system prompt).
+- **cardgame**: `mcp-data/cardgame/` (mazos en JSON).
+
+La app web guarda en IndexedDB; para que la IA vea o modifique datos, puedes exportar a `mcp-data` desde la app (si implementas el botón) o la IA puede escribir ahí y tú importar después.
+
+### Tools disponibles
+
+| Tool | App | Descripción |
+|------|-----|-------------|
+| `ntr_list_apps` | shell | Lista todas las apps (id, nombre, descripción). |
+| `ntr_get_app_info` | shell | Devuelve el manifest de una app por `appId`. |
+| `ntr_list_app_tools` | shell | Lista las tools MCP de una app. |
+| `narrated_story_list_saves` | narrated-story | Lista saves en `mcp-data/narrated-story/`. |
+| `narrated_story_read_save` | narrated-story | Lee el JSON de un save por nombre (usa `saveName: "current"` para la partida en curso). |
+| `narrated_story_get_state` | narrated-story | Devuelve el estado actual de la partida (personajes, lugares). |
+| `narrated_story_create` | narrated-story | Crea en un solo payload todos los lugares y/o personajes nuevos del turno. |
+| `narrated_story_apply_updates` | narrated-story | Aplica en un solo payload todas las actualizaciones: lugares, personajes (stats, ubicaciones). Fuente única para la UI. |
+| `cardgame_list_decks` | cardgame | Lista mazos en `mcp-data/cardgame/`. |
+| `cardgame_read_deck` | cardgame | Lee un mazo por nombre. |
+| `cardgame_write_deck` | cardgame | Escribe un mazo (JSON) en el directorio MCP. |
+
+Para **tools globales**: edita `tools/definitions.ts`, `tools/run.ts` y `tools/context.ts`; implementa en `mcp-server/context-node.ts` y, si aplica, en `src/tools/browserContext.ts`. Para **tools de Narrated Story**: edita `src/apps/narratedStory/tools/` (definitions, context, run, browserContext) y `mcp-server/context-node.ts`. El servidor MCP registra todas vía `mcp-server/register-tools.ts`.
+
 ## 🎯 Cómo Jugar
 
 1. **Inicio**: Al iniciar el juego, presiona el botón "Generar Historia Inicial" para crear la narrativa inicial usando IA (esto evita gastar tokens automáticamente)
@@ -195,37 +249,191 @@ Edita `data/ai-config.js` para configurar:
 - Durante la esclavización, la general pierde amor por turno
 - Si el amor llega a 0, se convierte en esclava del captor
 
+## 🏗️ Arquitectura del software
+
+La aplicación tiene dos capas: la **shell React** (entrada principal) y las **apps** que se abren desde el selector. Todo lo que ves (menú, título, “Volver”, selector de apps, ajustes) pertenece a la shell; cada “app” (Classic Mode, Biblioteca de Datos, Mi App, etc.) es una pantalla que se monta dentro de la shell.
+
+### Flujo de entrada
+
+```
+index.html
+  → src/main.tsx (React root)
+    → App.tsx
+      → AppProvider (estado global: app actual, ajustes)
+      → Shell (barra de título + menú + contenido)
+        → import './apps'  (registra todas las apps al cargar)
+```
+
+- **AppProvider** (`src/store/AppContext.tsx`): Guarda `currentAppId` (qué app está abierta o `null` = selector), `settings` (resolución, idioma, volumen, etc.) y los setters. Los ajustes se persisten en `localStorage` al cambiar y al cerrar el modal.
+- **Shell** (`src/shell/Shell.tsx`): Siempre muestra la barra de título (título “NTR Adventure”, botón “← Volver” si hay app abierta, menú hamburguesa). El contenido es:
+  - Si `currentAppId === null` → **AppSelector** (grid de tarjetas “Elige una aplicación”).
+  - Si `currentAppId` tiene valor → **AppContainer** renderiza el `Component` de esa app.
+
+### Registro de apps
+
+- **Registry** (`src/apps/registry.ts`): Un `Map` que guarda, por `id`, el **manifest** (nombre, descripción, tipo, `legacy`) y el **Component** de React.
+- **Registro** (`src/apps/index.ts`): Aquí se llama a `registerApp()` por cada app. Cada app tiene un `id` único, un manifest y un `Component` que recibe la prop `appId`.
+- Las apps se listan en el selector con `getAvailableApps()` (se excluye la de id `_template`). Al hacer clic en una tarjeta se hace `setCurrentAppId(manifest.id)` y el Shell pasa a mostrar esa app dentro de **AppContainer**.
+
+### Dónde está cada cosa
+
+| Qué | Dónde |
+|-----|--------|
+| Estado global (app actual, ajustes) | `src/store/AppContext.tsx` |
+| Persistencia de ajustes | `src/store/settings.ts` (`settingsStore.save/load`) |
+| Barra de título, menú, selector de apps | `src/shell/` (Shell.tsx, MainMenu.tsx, AppSelector.tsx) |
+| Modal de Ajustes | `src/shell/Settings/SettingsModal.tsx` |
+| Definición y registro de cada app | `src/apps/index.ts` + carpeta `src/apps/<id>/` |
+| Contenedor que monta la app activa | `src/apps/AppContainer.tsx` |
+| Datos del juego (reinos, generales, provincias) para React | `src/data/gameData.ts` (reexporta `js/dataLoader.js` + hook `useGameData()`) |
+| Traducciones (es/en) de la shell | `src/i18n.ts` |
+| Tokens de diseño (colores, espaciado, fuentes) | `src/theme/tokens.css`, `src/theme/components.css` |
+| Lógica legacy del juego clásico | `js/game.js`, `js/gameModes/`, etc. |
+| Datos estáticos (reinos, generales, reglas, IA) | `data/*.js` (usados por `js/dataLoader.js`) |
+
+### Tipos de app
+
+- **`type: 'app'`**: App normal (ej. Biblioteca de Datos, Mi App).
+- **`type: 'game-mode'`**: Modo de juego (ej. Classic Mode).
+- **`legacy: true`** en el manifest: Muestra la etiqueta “Legacy” en el selector (para apps que reutilizan código legacy como Classic o Data Library).
+
+---
+
+## ➕ Implementar una nueva app
+
+Sigue estos pasos para añadir una app nueva que aparezca en “Elige una aplicación” y se abra al hacer clic.
+
+### 1. Crear la carpeta y el componente
+
+Crea una carpeta bajo `src/apps/` con el nombre de tu app (por ejemplo `miJuego`) y dentro un `App.tsx`:
+
+```
+src/apps/miJuego/
+  App.tsx
+```
+
+El componente debe ser un **default export** y recibir la prop `appId: string` (aunque no la uses). Usa las clases y variables CSS del tema para que se vea como el resto de la app:
+
+```tsx
+// src/apps/miJuego/App.tsx
+import type { ComponentType } from 'react'
+
+const MiJuegoApp: ComponentType<{ appId: string }> = () => (
+  <div className="app-blank-page">
+    <h2 className="section-title">Mi Juego</h2>
+    <p style={{ color: 'var(--color-text-muted)' }}>Contenido aquí.</p>
+  </div>
+)
+
+export default MiJuegoApp
+```
+
+Puedes usar:
+- **Clases de la shell**: `app-blank-page`, `section-title`, `btn`, `btn-primary`, etc. (ver `src/theme/components.css` y `src/shell/Shell.css`).
+- **Tokens CSS**: `var(--color-text)`, `var(--space-md)`, `var(--font-size-base)`, etc. (`src/theme/tokens.css`).
+- **Datos del juego**: `import { useGameData } from '@/data/gameData'` y luego `gameData.getKingdoms()`, etc., cuando `loaded` sea true.
+- **Idioma**: `const { settings } = useApp(); t('clave', settings.language)` si añades claves en `src/i18n.ts`.
+
+Puedes copiar **`src/apps/blank/App.tsx`** como base (app vacía con el estilo de la aplicación).
+
+### 2. Registrar la app
+
+En **`src/apps/index.ts`**:
+
+1. Importa tu componente:
+   ```ts
+   import MiJuegoApp from './miJuego/App'
+   ```
+2. Llama a `registerApp()` con el manifest y el Component:
+   ```ts
+   registerApp({
+     manifest: {
+       id: 'mi-juego',
+       name: 'Mi Juego',
+       description: 'Descripción breve que verá el usuario en la tarjeta',
+       type: 'app',
+       // legacy: true   solo si reutilizas código legacy y quieres la etiqueta "Legacy"
+     },
+     Component: MiJuegoApp,
+   })
+   ```
+
+El **`id`** debe ser único (solo letras, números y guiones). Es el que se usa internamente (`currentAppId`). El **`name`** y **`description`** son los que se muestran en el selector de apps.
+
+### 3. Probar
+
+1. Arranca el proyecto (`npm run dev` o `npm start` según uses Vite o el servidor clásico).
+2. Abre la app en el navegador: deberías ver tu app en la lista “Elige una aplicación”.
+3. Haz clic en la tarjeta: la shell debe mostrar la barra de título (con “← Volver”) y tu componente como contenido.
+
+### Resumen de archivos a tocar
+
+| Paso | Archivo | Qué hacer |
+|------|---------|-----------|
+| Crear app | `src/apps/<nombre>/App.tsx` | Componente React con default export y prop `appId`. |
+| Registrar | `src/apps/index.ts` | `import ... from './<nombre>/App'` y `registerApp({ manifest, Component })`. |
+
+Opcional: si tu app usa estilos propios, añade un CSS en su carpeta (ej. `src/apps/miJuego/miJuego.css`) e impórtalo en `App.tsx`. Si necesitas datos de reinos/generales/provincias, usa `useGameData()` desde `@/data/gameData`.
+
+---
+
 ## 📁 Estructura del Proyecto
 
 ```
 ntr-adv/
-├── .gitignore          # Exclusiones de Git
-├── .env.example        # Plantilla de variables de entorno
-├── package.json        # Configuración npm y dependencias
-├── server.js           # Servidor de desarrollo
-├── README.md           # Este archivo
-├── index.html          # Página principal
-├── data/               # Configuración modular del juego
-│   ├── kingdoms.js     # Configuración de reinos
-│   ├── generals.js     # Configuración de generales
-│   ├── provinces.js    # Configuración de provincias
-│   ├── game-rules.js   # Reglas y balance
-│   ├── ai-config.js    # Configuración de IA
-│   └── index.js        # Exportador centralizado
+├── .gitignore
+├── .env.example
+├── package.json
+├── vite.config.ts
+├── index.html              # Entrada principal (carga src/main.tsx)
+├── index.legacy.html       # Versión legacy (JS + html del juego)
+├── README.md
+├── src/                    # Aplicación React (shell + apps)
+│   ├── main.tsx
+│   ├── App.tsx
+│   ├── index.css
+│   ├── i18n.ts             # Traducciones (es/en) de la shell
+│   ├── theme/              # Tokens y componentes reutilizables
+│   │   ├── tokens.css
+│   │   └── components.css
+│   ├── store/              # Estado global
+│   │   ├── AppContext.tsx  # currentAppId, settings, setters
+│   │   └── settings.ts     # Persistencia de ajustes (localStorage)
+│   ├── data/
+│   │   └── gameData.ts     # Acceso a datos del juego desde React (useGameData)
+│   ├── shell/              # Barra de título, menú, selector de apps, ajustes
+│   │   ├── Shell.tsx
+│   │   ├── AppSelector.tsx
+│   │   ├── MainMenu.tsx
+│   │   └── Settings/
+│   ├── apps/               # Apps que se abren desde el selector
+│   │   ├── index.ts        # Registro de todas las apps (registerApp)
+│   │   ├── registry.ts
+│   │   ├── types.ts
+│   │   ├── AppContainer.tsx
+│   │   ├── _template/      # Plantilla (no se muestra en selector)
+│   │   ├── blank/          # App vacía “Mi App”
+│   │   ├── classic/        # Classic Mode (legacy)
+│   │   ├── dataLibrary/    # Biblioteca de Datos
+│   │   └── <tu-app>/       # Tu nueva app: App.tsx (+ opcional .css)
+├── data/                   # Configuración del juego (legacy + gameData)
+│   ├── kingdoms.js
+│   ├── generals.js
+│   ├── provinces.js
+│   ├── game-rules.js
+│   ├── ai-config.js
+│   └── index.js
 ├── css/
-│   └── style.css       # Estilos del juego
+│   └── style.css          # Estilos del juego legacy / Classic
 ├── js/
-│   ├── ui/
-│   │   └── imageHelper.js # Helper para manejar imágenes
-│   ├── env.js          # Variables de entorno (generado automáticamente)
-│   ├── config.js       # Wrapper de compatibilidad (importa desde data/)
-│   ├── gameState.js    # Gestión del estado del juego
-│   ├── combat.js       # Sistema de combate
-│   ├── ai.js           # IA de decisión enemiga
-│   ├── aiIntegration.js # Integración con LLMs
-│   └── game.js         # Lógica principal del juego
+│   ├── dataLoader.js
+│   ├── config.js
+│   ├── game.js
+│   ├── gameModes/
+│   ├── apps/
+│   └── ...
 └── scripts/
-    └── inject-env.js   # Script para inyectar variables de entorno
+    └── inject-env.js
 ```
 
 ## 🔧 Desarrollo
@@ -234,6 +442,10 @@ ntr-adv/
 
 - `main`: Branch principal con código estable
 - `dev`: Branch de desarrollo
+
+### Agregar una nueva app (pantalla en el selector)
+
+Consulta la sección **[Implementar una nueva app](#-implementar-una-nueva-app)** más arriba: crear carpeta en `src/apps/<nombre>/`, exportar el componente y registrarlo en `src/apps/index.ts`.
 
 ### Agregar Nuevos Reinos o Generales
 
@@ -272,7 +484,7 @@ Edita `promptTemplate` en `data/ai-config.js` para cambiar cómo se genera la na
 
 - Asegúrate de haber ejecutado `npm install` primero
 - Verifica que el servidor esté corriendo con `npm start`
-- No abras el HTML directamente, siempre usa el servidor (http://localhost:3000)
+- No abras el HTML directamente, siempre usa el servidor (http://localhost:5173)
 - Verifica que el archivo `js/env.js` se haya generado correctamente
 - Revisa la consola del navegador para errores
 
@@ -281,7 +493,7 @@ Edita `promptTemplate` en `data/ai-config.js` para cambiar cómo se genera la na
 - Verifica que Node.js esté instalado: `node --version`
 - Verifica que npm esté instalado: `npm --version`
 - Asegúrate de haber ejecutado `npm install` en el directorio del proyecto
-- Verifica que el puerto 3000 no esté en uso
+- Verifica que el puerto 5173 no esté en uso
 
 ## 🌐 Despliegue en GitHub Pages
 
